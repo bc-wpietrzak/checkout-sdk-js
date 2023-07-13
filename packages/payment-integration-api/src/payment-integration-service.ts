@@ -24,6 +24,8 @@ export default interface PaymentIntegrationService {
 
     loadCheckout(id?: string): Promise<PaymentIntegrationSelectors>;
 
+    loadCurrentOrder(options?: RequestOptions): Promise<PaymentIntegrationSelectors>;
+
     loadDefaultCheckout(): Promise<PaymentIntegrationSelectors>;
 
     loadPaymentMethod(
