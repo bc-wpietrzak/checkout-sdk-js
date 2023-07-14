@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.399.1-alpha.71212344e008160adff2525cde9b5be4f86b89f4](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.399.0...v1.399.1-alpha.71212344e008160adff2525cde9b5be4f86b89f4) (2023-07-14)
+
+
+### Features
+
+* **payment:** add loadCurrentOrder to PaymentIntegrationService ([7121234](https://github.com/bigcommerce/checkout-sdk-js/commit/71212344e008160adff2525cde9b5be4f86b89f4))
+
 ## [1.399.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.398.2...v1.399.0) (2023-07-10)
 
 
