@@ -50,7 +50,10 @@ describe('DefaultPaymentIntegrationService', () => {
         CheckoutActionCreator,
         'loadCheckout' | 'loadCurrentCheckout' | 'loadDefaultCheckout'
     >;
-    let orderActionCreator: Pick<OrderActionCreator, 'loadCurrentOrder' | 'submitOrder' | 'finalizeOrder'>;
+    let orderActionCreator: Pick<
+        OrderActionCreator,
+        'loadCurrentOrder' | 'submitOrder' | 'finalizeOrder'
+    >;
     let billingAddressActionCreator: Pick<BillingAddressActionCreator, 'updateAddress'>;
     let consignmentActionCreator: Pick<
         ConsignmentActionCreator,
