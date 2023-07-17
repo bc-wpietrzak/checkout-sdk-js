@@ -2,12 +2,47 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.399.1-alpha.71212344e008160adff2525cde9b5be4f86b89f4](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.399.0...v1.399.1-alpha.71212344e008160adff2525cde9b5be4f86b89f4) (2023-07-14)
+### [1.402.1](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.402.0...v1.402.1) (2023-07-17)
+
+
+### Bug Fixes
+
+* **payment:** PAYPAL-2719 fix amazon pay button ([de1cb81](https://github.com/bigcommerce/checkout-sdk-js/commit/de1cb81bd278fbb81782d4dfb32db6b1370291c8))
+
+## [1.402.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.401.0...v1.402.0) (2023-07-17)
 
 
 ### Features
 
-* **payment:** add loadCurrentOrder to PaymentIntegrationService ([7121234](https://github.com/bigcommerce/checkout-sdk-js/commit/71212344e008160adff2525cde9b5be4f86b89f4))
+* **payment:** PAYPAL-2720 Fixed BT LPM cart amount ([#2058](https://github.com/bigcommerce/checkout-sdk-js/issues/2058)) ([5fb2488](https://github.com/bigcommerce/checkout-sdk-js/commit/5fb2488bf386a56d9249130051f066240ba93e4a))
+
+## [1.401.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.400.0...v1.401.0) (2023-07-16)
+
+
+### Features
+
+* **checkout:** CHECKOUT-7538 Introduce extension messenger and command handler ([#2050](https://github.com/bigcommerce/checkout-sdk-js/issues/2050)) ([b43adec](https://github.com/bigcommerce/checkout-sdk-js/commit/b43adecf32105a6a7bf9451e4c80fd0beb77eae2))
+
+## [1.400.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.399.2...v1.400.0) (2023-07-13)
+
+
+### Features
+
+* **payment:** PI-502 Fortis package ([8032101](https://github.com/bigcommerce/checkout-sdk-js/commit/80321015800e869b8d98d0fa95fb77580db8f25a))
+
+### [1.399.2](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.399.1...v1.399.2) (2023-07-13)
+
+
+### Bug Fixes
+
+* **payment:** PAYPAL-2502 bump braintree sdk version ([33970f0](https://github.com/bigcommerce/checkout-sdk-js/commit/33970f05d41175cb163a1a18c8c5129d4e732036))
+
+### [1.399.1](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.399.0...v1.399.1) (2023-07-13)
+
+
+### Bug Fixes
+
+* upgrade yup from 1.1.1 to 1.2.0 ([#2049](https://github.com/bigcommerce/checkout-sdk-js/issues/2049)) ([259d88c](https://github.com/bigcommerce/checkout-sdk-js/commit/259d88c27a1bb20bfdb7a4eb9d9836e3211ef3f4))
 
 ## [1.399.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.398.2...v1.399.0) (2023-07-10)
 
