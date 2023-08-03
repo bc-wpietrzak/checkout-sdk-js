@@ -5,22 +5,34 @@ import { PaymentMethodClientUnavailableError } from '@bigcommerce/checkout-sdk/p
 import {
     BraintreeBankAccountCreator,
     BraintreeClientCreator,
+    BraintreeConnectCreator,
     BraintreeDataCollectorCreator,
     BraintreeHostWindow,
+    BraintreeInitializationData,
     BraintreePaypalCheckoutCreator,
 } from './braintree';
 
-const VERSION = '3.95.0';
+const BraintreeSdkVersionStable = '3.95.0';
 
 export default class BraintreeScriptLoader {
+    private braintreeSdkVersion = BraintreeSdkVersionStable;
+
     constructor(
         private scriptLoader: ScriptLoader,
         private braintreeHostWindow: BraintreeHostWindow,
     ) {}
 
+    // TODO: this method is needed only for braintree AXO
+    // So can be removed after Beta state
+    initialize({ isAcceleratedCheckoutEnabled }: BraintreeInitializationData) {
+        this.braintreeSdkVersion = isAcceleratedCheckoutEnabled
+            ? '3.95.0-connect-alpha.11'
+            : BraintreeSdkVersionStable;
+    }
+
     async loadClient(): Promise<BraintreeClientCreator> {
         await this.scriptLoader.loadScript(
-            `//js.braintreegateway.com/web/${VERSION}/js/client.min.js`,
+            `//js.braintreegateway.com/web/${this.braintreeSdkVersion}/js/client.min.js`,
         );
 
         if (!this.braintreeHostWindow.braintree?.client) {
@@ -30,9 +42,21 @@ export default class BraintreeScriptLoader {
         return this.braintreeHostWindow.braintree.client;
     }
 
+    async loadConnect(): Promise<BraintreeConnectCreator> {
+        await this.scriptLoader.loadScript(
+            `//js.braintreegateway.com/web/${this.braintreeSdkVersion}/js/connect.min.js`,
+        );
+
+        if (!this.braintreeHostWindow.braintree?.connect) {
+            throw new PaymentMethodClientUnavailableError();
+        }
+
+        return this.braintreeHostWindow.braintree.connect;
+    }
+
     async loadPaypalCheckout(): Promise<BraintreePaypalCheckoutCreator> {
         await this.scriptLoader.loadScript(
-            `//js.braintreegateway.com/web/${VERSION}/js/paypal-checkout.min.js`,
+            `//js.braintreegateway.com/web/${this.braintreeSdkVersion}/js/paypal-checkout.min.js`,
         );
 
         if (!this.braintreeHostWindow.braintree?.paypalCheckout) {
@@ -44,7 +68,7 @@ export default class BraintreeScriptLoader {
 
     async loadBraintreeLocalMethods() {
         await this.scriptLoader.loadScript(
-            `//js.braintreegateway.com/web/${VERSION}/js/local-payment.min.js`,
+            `//js.braintreegateway.com/web/${this.braintreeSdkVersion}/js/local-payment.min.js`,
         );
 
         if (!this.braintreeHostWindow.braintree?.localPayment) {
@@ -56,7 +80,7 @@ export default class BraintreeScriptLoader {
 
     async loadDataCollector(): Promise<BraintreeDataCollectorCreator> {
         await this.scriptLoader.loadScript(
-            `//js.braintreegateway.com/web/${VERSION}/js/data-collector.min.js`,
+            `//js.braintreegateway.com/web/${this.braintreeSdkVersion}/js/data-collector.min.js`,
         );
 
         if (!this.braintreeHostWindow.braintree?.dataCollector) {
@@ -68,7 +92,7 @@ export default class BraintreeScriptLoader {
 
     async loadUsBankAccount(): Promise<BraintreeBankAccountCreator> {
         await this.scriptLoader.loadScript(
-            `//js.braintreegateway.com/web/${VERSION}/js/us-bank-account.min.js`,
+            `//js.braintreegateway.com/web/${this.braintreeSdkVersion}/js/us-bank-account.min.js`,
         );
 
         if (

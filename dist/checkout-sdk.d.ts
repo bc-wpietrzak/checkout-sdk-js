@@ -1289,6 +1289,12 @@ declare interface BillingAddressRequestBody extends AddressRequestBody {
     email?: string;
 }
 
+declare interface BirthDate {
+    getFullYear(): number;
+    getDate(): number;
+    getMonth(): number;
+}
+
 declare interface BlockElementStyles extends InlineElementStyles {
     backgroundColor?: string;
     boxShadow?: string;
@@ -1523,6 +1529,39 @@ declare interface BoltPaymentInitializeOptions {
      * A callback that gets called when the customer selects Bolt as payment option.
      */
     onPaymentSelect?(hasBoltAccount: boolean): void;
+}
+
+declare interface BraintreeAcceleratedCheckoutCustomer {
+    authenticationState?: string;
+    addresses?: AddressRequestBody[];
+    instruments?: CardInstrument[];
+}
+
+/**
+ * A set of options that are required to initialize the Braintree Accelerated Checkout payment
+ * method for presenting on the page.
+ *
+ *
+ * Also, Braintree requires specific options to initialize Braintree Accelerated Checkout Credit Card Component
+ * ```html
+ * <!-- This is where the Braintree Credit Card Component will be inserted -->
+ * <div id="container"></div>
+ * ```
+ *
+ * ```js
+ * service.initializePayment({
+ *     methodId: 'braintreeacceleratedcheckout',
+ *     braintreeacceleratedcheckout: {
+ *         container: '#container',
+ *     },
+ * });
+ * ```
+ */
+declare interface BraintreeAcceleratedCheckoutPaymentInitializeOptions {
+    /**
+     * The CSS selector of a container where the payment widget should be inserted into.
+     */
+    container: string;
 }
 
 declare interface BraintreeError extends Error {
@@ -3450,7 +3489,7 @@ declare class CheckoutService {
      * @param handler - The handler function for the extension command.
      * @returns A function that, when called, will deregister the command handler.
      */
-    listenExtensionCommand(extensionId: string, command: ExtensionCommand, handler: ExtensionCommandHandler): () => void;
+    handleExtensionCommand(extensionId: string, command: ExtensionCommandType, handler: ExtensionCommandHandler): () => void;
     /**
      * Dispatches an action through the data store and returns the current state
      * once the action is dispatched.
@@ -3997,6 +4036,13 @@ declare interface CheckoutStoreSelector {
      * @returns The list of extensions if it is loaded, otherwise undefined.
      */
     getExtensions(): Extension[] | undefined;
+    /**
+     * Gets payment provider customers data.
+     *
+     * @alpha
+     * @returns The object with payment provider customer data
+     */
+    getPaymentProviderCustomer(): PaymentProviderCustomer | undefined;
 }
 
 /**
@@ -4982,15 +5028,16 @@ declare interface Extension {
     url: string;
 }
 
-declare const enum ExtensionCommand {
+declare type ExtensionCommand = ReloadCheckoutCommand | ShowLoadingIndicatorCommand | SetIframeStyleCommand | FrameLoadedCommand;
+
+declare type ExtensionCommandHandler = (data: ExtensionCommand) => void;
+
+declare const enum ExtensionCommandType {
+    FrameLoaded = "FRAME_LOADED",
     ReloadCheckout = "RELOAD_CHECKOUT",
     ShowLoadingIndicator = "SHOW_LOADING_INDICATOR",
     SetIframeStyle = "SET_IFRAME_STYLE"
 }
-
-declare type ExtensionCommandHandler = (data: ExtensionOriginEvent) => void;
-
-declare type ExtensionOriginEvent = ReloadCheckoutEvent | ShowLoadingIndicatorEvent | SetIframeStylePayload;
 
 declare const enum ExtensionRegion {
     ShippingShippingAddressFormBefore = "shipping.shippingAddressForm.before",
@@ -5051,6 +5098,13 @@ declare interface FormFields {
     customerAccount: FormField[];
     shippingAddress: FormField[];
     billingAddress: FormField[];
+}
+
+declare interface FrameLoadedCommand {
+    type: ExtensionCommandType.FrameLoaded;
+    payload: {
+        extensionId: string;
+    };
 }
 
 declare interface GatewayOrderPayment extends OrderPayment {
@@ -6130,6 +6184,7 @@ declare interface Order {
     taxes: Tax[];
     taxTotal: number;
     channelId: number;
+    fees: OrderFee[];
 }
 
 declare interface OrderBillingAddress extends Address {
@@ -6138,6 +6193,14 @@ declare interface OrderBillingAddress extends Address {
 
 declare interface OrderConsignment {
     shipping: OrderShippingConsignment[];
+}
+
+declare interface OrderFee {
+    id: number;
+    type: string;
+    customerDisplayName: string;
+    cost: number;
+    source: string;
 }
 
 declare interface OrderPayment {
@@ -6833,7 +6896,7 @@ declare interface PayPalInstrument extends BaseAccountInstrument {
     method: 'paypal';
 }
 
-declare type PaymentInitializeOptions = BasePaymentInitializeOptions & WithAdyenV2PaymentInitializeOptions & WithAdyenV3PaymentInitializeOptions & WithApplePayPaymentInitializeOptions & WithBlueSnapDirectAPMPaymentInitializeOptions & WithBoltPaymentInitializeOptions & WithBraintreePaypalAchPaymentInitializeOptions & WithBraintreeLocalMethodsPaymentInitializeOptions & WithCreditCardPaymentInitializeOptions & WithMolliePaymentInitializeOptions & WithPayPalCommercePaymentInitializeOptions & WithPayPalCommerceCreditPaymentInitializeOptions & WithPayPalCommerceVenmoPaymentInitializeOptions & WithPayPalCommerceAlternativeMethodsPaymentInitializeOptions & WithPayPalCommerceCreditCardsPaymentInitializeOptions & WithSquareV2PaymentInitializeOptions;
+declare type PaymentInitializeOptions = BasePaymentInitializeOptions & WithAdyenV2PaymentInitializeOptions & WithAdyenV3PaymentInitializeOptions & WithApplePayPaymentInitializeOptions & WithBlueSnapDirectAPMPaymentInitializeOptions & WithBoltPaymentInitializeOptions & WithBraintreePaypalAchPaymentInitializeOptions & WithBraintreeLocalMethodsPaymentInitializeOptions & WithBraintreeAcceleratedCheckoutPaymentInitializeOptions & WithCreditCardPaymentInitializeOptions & WithMolliePaymentInitializeOptions & WithPayPalCommercePaymentInitializeOptions & WithPayPalCommerceCreditPaymentInitializeOptions & WithPayPalCommerceVenmoPaymentInitializeOptions & WithPayPalCommerceAlternativeMethodsPaymentInitializeOptions & WithPayPalCommerceCreditCardsPaymentInitializeOptions & WithSquareV2PaymentInitializeOptions;
 
 declare type PaymentInstrument = CardInstrument | AccountInstrument;
 
@@ -6870,6 +6933,8 @@ declare interface PaymentMethodConfig {
     returnUrl?: string;
     testMode?: boolean;
 }
+
+declare type PaymentProviderCustomer = BraintreeAcceleratedCheckoutCustomer;
 
 /**
  * The set of options for configuring any requests related to the payment step of
@@ -6950,6 +7015,34 @@ declare enum PaypalButtonStyleSizeOption {
     MEDIUM = "medium",
     LARGE = "large",
     RESPONSIVE = "responsive"
+}
+
+declare interface PaypalCommerceRatePay {
+    /**
+     * The CSS selector of a container where the payment widget should be inserted into.
+     */
+    container: string;
+    /**
+     * The CSS selector of a container where the legal text should be inserted into.
+     */
+    legalTextContainer: string;
+    /**
+     * A callback that gets form values
+     */
+    getFieldsValues?(): {
+        ratepayBirthDate: BirthDate;
+        ratepayPhoneNumber: string;
+        ratepayPhoneCountryCode: string;
+    };
+    /**
+     * A callback right before render Smart Payment Button that gets called when
+     * Smart Payment Button is eligible. This callback can be used to hide the standard submit button.
+     */
+    onRenderButton?(): void;
+    /**
+     * A callback for displaying error popup. This callback requires error object as parameter.
+     */
+    onError?(error: unknown): void;
 }
 
 /**
@@ -7034,8 +7127,8 @@ declare interface Region {
     name: string;
 }
 
-declare interface ReloadCheckoutEvent {
-    type: ExtensionCommand.ReloadCheckout;
+declare interface ReloadCheckoutCommand {
+    type: ExtensionCommandType.ReloadCheckout;
     payload: {
         extensionId: string;
     };
@@ -7095,8 +7188,8 @@ declare interface SepaPlaceHolder_2 {
     ibanNumber?: string;
 }
 
-declare interface SetIframeStylePayload {
-    type: ExtensionCommand.ReloadCheckout;
+declare interface SetIframeStyleCommand {
+    type: ExtensionCommandType.SetIframeStyle;
     payload: {
         extensionId: string;
         style: {
@@ -7163,8 +7256,8 @@ declare interface ShopperCurrency extends StoreCurrency {
     isTransactional: boolean;
 }
 
-declare interface ShowLoadingIndicatorEvent {
-    type: ExtensionCommand.ReloadCheckout;
+declare interface ShowLoadingIndicatorCommand {
+    type: ExtensionCommandType.ShowLoadingIndicator;
     payload: {
         extensionId: string;
         show: boolean;
@@ -8038,6 +8131,10 @@ declare interface WithBoltPaymentInitializeOptions {
     bolt?: BoltPaymentInitializeOptions;
 }
 
+declare interface WithBraintreeAcceleratedCheckoutPaymentInitializeOptions {
+    braintreeacceleratedcheckout?: BraintreeAcceleratedCheckoutPaymentInitializeOptions;
+}
+
 declare interface WithBraintreeLocalMethodsPaymentInitializeOptions {
     braintreelocalmethods?: BraintreeLocalMethods;
 }
@@ -8109,6 +8206,7 @@ declare interface WithPayPalCommerceAlternativeMethodsButtonInitializeOptions {
 declare interface WithPayPalCommerceAlternativeMethodsPaymentInitializeOptions {
     paypalcommerce?: PayPalCommerceAlternativeMethodsPaymentOptions;
     paypalcommercealternativemethods?: PayPalCommerceAlternativeMethodsPaymentOptions;
+    paypalcommerceratepay?: PaypalCommerceRatePay;
 }
 
 declare interface WithPayPalCommerceButtonInitializeOptions {

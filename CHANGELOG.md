@@ -2,6 +2,117 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.415.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.414.0...v1.415.0) (2023-08-02)
+
+
+### Features
+
+* **payment:** PAYPAL-2803 made an ability to use getCountries method in integration packages ([#2093](https://github.com/bigcommerce/checkout-sdk-js/issues/2093)) ([ce1419f](https://github.com/bigcommerce/checkout-sdk-js/commit/ce1419fa5d380da9aca8de803374fc01508413f3))
+
+## [1.414.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.413.0...v1.414.0) (2023-08-02)
+
+
+### Features
+
+* **payment:** PAYPAL-1545 added paypalcommerce ratepay payment strategy ([#2040](https://github.com/bigcommerce/checkout-sdk-js/issues/2040)) ([47387ac](https://github.com/bigcommerce/checkout-sdk-js/commit/47387aca1c5de298e5ef6e3e85666a87f934631c))
+
+## [1.413.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.412.0...v1.413.0) (2023-08-02)
+
+
+### Features
+
+* **payment:** PAYPAL-000 add an ability to use getPaymentProviderCustomer method on the client side ([#2090](https://github.com/bigcommerce/checkout-sdk-js/issues/2090)) ([8be3788](https://github.com/bigcommerce/checkout-sdk-js/commit/8be3788a3ba55c0531d7b99340416f05045bbb57))
+
+## [1.412.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.411.0...v1.412.0) (2023-08-01)
+
+
+### Features
+
+* **payment:** PAYPAL-000 created storage package ([#2086](https://github.com/bigcommerce/checkout-sdk-js/issues/2086)) ([c818675](https://github.com/bigcommerce/checkout-sdk-js/commit/c818675b5a98d438654f35195c51d2c138c9369d))
+* **payment:** PAYPAL-2727 added Braintree Accelerated Checkout customer strategy ([#2078](https://github.com/bigcommerce/checkout-sdk-js/issues/2078)) ([475633a](https://github.com/bigcommerce/checkout-sdk-js/commit/475633a56cccb13a80275be735131f602c16aa36))
+* **payment:** PAYPAL-2727 added Braintree Accelerated Checkout customer strategy ([#2087](https://github.com/bigcommerce/checkout-sdk-js/issues/2087)) ([913aa28](https://github.com/bigcommerce/checkout-sdk-js/commit/913aa282393187eae2d8cd73976a094f1014586f))
+
+## [1.411.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.410.0...v1.411.0) (2023-07-31)
+
+
+### Features
+
+* **payment:** PAYPAL-2731 added PaymentProviderCustomer state ([#2075](https://github.com/bigcommerce/checkout-sdk-js/issues/2075)) ([83ae13d](https://github.com/bigcommerce/checkout-sdk-js/commit/83ae13d873730dd613edf157ac44b2784681a878))
+
+## [1.410.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.409.0...v1.410.0) (2023-07-31)
+
+
+### Features
+
+* **payment:** PAYPAL-2725 updated braintree sdk to newest alpha version ([#2082](https://github.com/bigcommerce/checkout-sdk-js/issues/2082)) ([7e630bb](https://github.com/bigcommerce/checkout-sdk-js/commit/7e630bb7e493507001ff710a468b615b017e65f7))
+* **payment:** PAYPAL-2725 updated braintree sdk to newest alpha version (core part) ([#2083](https://github.com/bigcommerce/checkout-sdk-js/issues/2083)) ([b8a9061](https://github.com/bigcommerce/checkout-sdk-js/commit/b8a9061f01cceb29884a76bdd3594d560f87bef6))
+
+## [1.409.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.408.0...v1.409.0) (2023-07-27)
+
+
+### Features
+
+* **payment:** PI-585 Make an ability to use loadCurrentOrder action from core package in integration checkout-sdk packages ([#2077](https://github.com/bigcommerce/checkout-sdk-js/issues/2077)) ([56daa7a](https://github.com/bigcommerce/checkout-sdk-js/commit/56daa7a6d4ff02ec4d30b02da4be35fe088c8e7c))
+
+## [1.408.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.407.0...v1.408.0) (2023-07-26)
+
+
+### Features
+
+* **checkout:** CHECKOUT-000 Update client side interfaces ([#2079](https://github.com/bigcommerce/checkout-sdk-js/issues/2079)) ([0ce1123](https://github.com/bigcommerce/checkout-sdk-js/commit/0ce11237a51a1f071177b3252491fd9b817f7206))
+
+## [1.407.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.406.1...v1.407.0) (2023-07-25)
+
+
+### Features
+
+* **payment:** PAYPAL-2744 fixed cart amout for order for BT LPM ([#2080](https://github.com/bigcommerce/checkout-sdk-js/issues/2080)) ([ae738f3](https://github.com/bigcommerce/checkout-sdk-js/commit/ae738f3fd6afab902afdd8429c08a6fde50a9b71))
+
+### [1.406.1](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.406.0...v1.406.1) (2023-07-25)
+
+
+### Bug Fixes
+
+* **payment:** PAYPAL-2634 removed redundant code, added updateShouldThrowInvalidError ([9ecf5fb](https://github.com/bigcommerce/checkout-sdk-js/commit/9ecf5fbee50c87996ec32b998c5ccc71dacb556a))
+
+## [1.406.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.405.2...v1.406.0) (2023-07-24)
+
+
+### Features
+
+* **payment:** PAYPAL-2726 added BraintreeAcceleratedCheckout payment strategy ([#2068](https://github.com/bigcommerce/checkout-sdk-js/issues/2068)) ([0a07d3c](https://github.com/bigcommerce/checkout-sdk-js/commit/0a07d3c5867839717358043313e85b771667d57b))
+
+### [1.405.2](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.405.1...v1.405.2) (2023-07-20)
+
+
+### Code Refactoring
+
+* **checkout:** CHECKOUT-7624 Update extension-related naming ([#2069](https://github.com/bigcommerce/checkout-sdk-js/issues/2069)) ([41af8df](https://github.com/bigcommerce/checkout-sdk-js/commit/41af8df893c19183ea5feb31a4afd4229803220c))
+
+### [1.405.1](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.405.0...v1.405.1) (2023-07-20)
+
+## [1.405.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.404.0...v1.405.0) (2023-07-20)
+
+
+### Features
+
+* **payment:** PAYPAL-2725 added an ability to switch braintree sdk version (core part) ([#2065](https://github.com/bigcommerce/checkout-sdk-js/issues/2065)) ([29d5451](https://github.com/bigcommerce/checkout-sdk-js/commit/29d54510ef69590bfd697b580594784ed487b5f7))
+* **payment:** PAYPAL-2725 added an ability to switch braintree sdk version to alpha due to the settings in cp ([#2063](https://github.com/bigcommerce/checkout-sdk-js/issues/2063)) ([94a4ce3](https://github.com/bigcommerce/checkout-sdk-js/commit/94a4ce3093b770fdfc6a21d96b6ee2908255adc5))
+
+## [1.404.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.403.0...v1.404.0) (2023-07-19)
+
+
+### Features
+
+* **checkout:** CHECKOUT-7595 Add client extension service ([#2056](https://github.com/bigcommerce/checkout-sdk-js/issues/2056)) ([c04106a](https://github.com/bigcommerce/checkout-sdk-js/commit/c04106afba0c341b9a76d4341cc98542d32dc7a7))
+
+## [1.403.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.402.1...v1.403.0) (2023-07-19)
+
+
+### Features
+
+* **order:** ORDERS-5715 add OrderFee interface, add fees field to Order interface ([#2066](https://github.com/bigcommerce/checkout-sdk-js/issues/2066)) ([9b09886](https://github.com/bigcommerce/checkout-sdk-js/commit/9b0988619bca9c690f853ab9089d64c74643f885))
+
 ### [1.402.1](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.402.0...v1.402.1) (2023-07-17)
 
 

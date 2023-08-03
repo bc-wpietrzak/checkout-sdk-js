@@ -13,19 +13,20 @@ import {
     BraintreeEnv,
     BraintreeError,
     BraintreeHostWindow,
+    BraintreeInitializationData,
     BraintreeModule,
     BraintreePaypalCheckout,
     BraintreePaypalSdkCreatorConfig,
     BraintreeShippingAddressOverride,
 } from './braintree';
-import BraintreeScriptLoader from './braintree-script-loader';
-import isBraintreeError from './is-braintree-error';
-import { PAYPAL_COMPONENTS } from './paypal';
 import {
     BraintreeLocalMethods,
     GetLocalPaymentInstance,
     LocalPaymentInstance,
 } from './braintree-local-payment-methods/braintree-local-methods-options';
+import BraintreeScriptLoader from './braintree-script-loader';
+import isBraintreeError from './is-braintree-error';
+import { PAYPAL_COMPONENTS } from './paypal';
 
 export default class BraintreeIntegrationService {
     private client?: Promise<BraintreeClient>;
@@ -43,19 +44,38 @@ export default class BraintreeIntegrationService {
         private braintreeHostWindow: BraintreeHostWindow,
     ) {}
 
-    initialize(clientToken: string) {
+    initialize(clientToken: string, initializationData: BraintreeInitializationData) {
         this.clientToken = clientToken;
+        this.braintreeScriptLoader.initialize(initializationData);
+    }
+
+    async getBraintreeConnect() {
+        // TODO: should be removed after PayPal prepare stable Braintree SDK version with AXO implementation
+        window.localStorage.setItem('axoEnv', 'test67');
+
+        if (!this.braintreeHostWindow.braintreeConnect) {
+            const clientToken = this.getClientTokenOrThrow();
+            const client = await this.getClient();
+            const deviceData = await this.getSessionId();
+
+            const braintreeConnectCreator = await this.braintreeScriptLoader.loadConnect();
+
+            this.braintreeHostWindow.braintreeConnect = await braintreeConnectCreator.create({
+                authorization: clientToken,
+                client,
+                deviceData,
+            });
+        }
+
+        return this.braintreeHostWindow.braintreeConnect;
     }
 
     async getClient(): Promise<BraintreeClient> {
-        if (!this.clientToken) {
-            throw new NotInitializedError(NotInitializedErrorType.PaymentNotInitialized);
-        }
-
         if (!this.client) {
+            const clientToken = this.getClientTokenOrThrow();
             const clientCreator = await this.braintreeScriptLoader.loadClient();
 
-            this.client = clientCreator.create({ authorization: this.clientToken });
+            this.client = clientCreator.create({ authorization: clientToken });
         }
 
         return this.client;
@@ -118,6 +138,7 @@ export default class BraintreeIntegrationService {
                     if (localPaymentErr) {
                         throw new Error(localPaymentErr);
                     }
+
                     getLocalPaymentInstance(localPaymentInstance);
                 },
             );
@@ -139,6 +160,7 @@ export default class BraintreeIntegrationService {
 
     async getDataCollector(options?: { paypal: boolean }): Promise<BraintreeDataCollector> {
         const cacheKey = options?.paypal ? 'paypal' : 'default';
+
         let cached = this.dataCollectors[cacheKey];
 
         if (!cached) {
@@ -258,5 +280,13 @@ export default class BraintreeIntegrationService {
 
     private teardownModule(module?: BraintreeModule) {
         return module ? module.teardown() : Promise.resolve();
+    }
+
+    private getClientTokenOrThrow(): string {
+        if (!this.clientToken) {
+            throw new NotInitializedError(NotInitializedErrorType.PaymentNotInitialized);
+        }
+
+        return this.clientToken;
     }
 }

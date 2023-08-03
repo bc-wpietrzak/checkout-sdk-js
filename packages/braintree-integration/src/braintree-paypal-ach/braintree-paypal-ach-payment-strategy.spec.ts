@@ -19,7 +19,7 @@ import {
 import { BraintreeBankAccount } from '../braintree';
 import BraintreeIntegrationService from '../braintree-integration-service';
 import BraintreeScriptLoader from '../braintree-script-loader';
-import { getBankAccountMock, getBraintreeAch } from '../braintree.mock';
+import { getBankAccountMock, getBraintreeAch } from '../mocks/braintree.mock';
 
 import { WithBraintreePaypalAchPaymentInitializeOptions } from './braintree-paypal-ach-initialize-options';
 import BraintreePaypalAchPaymentStrategy from './braintree-paypal-ach-payment-strategy';
@@ -161,12 +161,23 @@ describe('BraintreePaypalAchPaymentStrategy', () => {
             }
         });
 
+        it('throws error if initialization data is missing', async () => {
+            paymentMethodMock.initializationData = undefined;
+
+            try {
+                await strategy.initialize(mockOptions);
+            } catch (error) {
+                expect(error).toBeInstanceOf(MissingDataError);
+            }
+        });
+
         it('successfully initialization payment strategy', async () => {
             await strategy.initialize(mockOptions);
 
             expect(paymentIntegrationService.loadPaymentMethod).toHaveBeenCalledWith(methodId);
             expect(braintreeIntegrationService.initialize).toHaveBeenCalledWith(
                 paymentMethodMock.clientToken,
+                paymentMethodMock.initializationData,
             );
             expect(braintreeIntegrationService.getUsBankAccount).toHaveBeenCalled();
         });

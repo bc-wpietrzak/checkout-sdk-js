@@ -5,6 +5,7 @@ import { HostedForm, HostedFormOptions } from './hosted-form';
 import { OrderRequestBody } from './order';
 import { InitializeOffsitePaymentConfig, Payment } from './payment';
 import PaymentIntegrationSelectors from './payment-integration-selectors';
+import { PaymentProviderCustomer } from './payment-provider-customer';
 import { ShippingAddressRequestBody } from './shipping';
 import { RequestOptions } from './util-types';
 
@@ -32,6 +33,8 @@ export default interface PaymentIntegrationService {
         methodId: string,
         options?: RequestOptions,
     ): Promise<PaymentIntegrationSelectors>;
+
+    loadCurrentOrder(options?: RequestOptions): Promise<PaymentIntegrationSelectors>;
 
     submitOrder(
         payload?: OrderRequestBody,
@@ -68,4 +71,8 @@ export default interface PaymentIntegrationService {
     ): Promise<PaymentIntegrationSelectors>;
 
     createBuyNowCart(body: BuyNowCartRequestBody, options?: RequestOptions): Promise<Cart>;
+
+    updatePaymentProviderCustomer(
+        paymentProviderCustomer: PaymentProviderCustomer,
+    ): Promise<PaymentIntegrationSelectors>;
 }

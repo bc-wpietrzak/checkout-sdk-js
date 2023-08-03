@@ -5,28 +5,34 @@ import getCart from './carts.mock';
 import getCheckout from './checkouts.mock';
 import getConfig from './config.mock';
 import getConsignment from './consignment.mock';
+import getCountries from './countries.mock';
 import { getCustomer } from './customer.mock';
 import { getOrder } from './orders.mock';
 
 const subscribe = jest.fn();
 const state = {
     getBillingAddress: jest.fn(() => getBillingAddress()),
+    getBillingAddressOrThrow: jest.fn(() => getBillingAddress()),
+    getCart: jest.fn(() => getCart()),
     getCartOrThrow: jest.fn(() => getCart()),
+    getCheckout: jest.fn(() => getCheckout()),
     getCheckoutOrThrow: jest.fn(() => getCheckout()),
     getConsignments: jest.fn(() => [getConsignment()]),
     getConsignmentsOrThrow: jest.fn(() => [getConsignment()]),
+    getCountries: jest.fn(() => getCountries()),
+    getCustomer: jest.fn(() => getCustomer()),
+    getCustomerOrThrow: jest.fn(() => getCustomer()),
     getHost: jest.fn(),
     getLocale: jest.fn(),
     getOrder: jest.fn(() => getOrder()),
     getOrderOrThrow: jest.fn(() => getOrder()),
     getShippingAddress: jest.fn(() => getAddress()),
+    getShippingAddressOrThrow: jest.fn(() => getAddress()),
     getStoreConfig: jest.fn(() => getConfig().storeConfig),
     getStoreConfigOrThrow: jest.fn(() => getConfig().storeConfig),
     getPaymentMethod: jest.fn(),
     getPaymentMethodOrThrow: jest.fn(),
     getPaymentStatus: jest.fn(),
-    getBillingAddressOrThrow: jest.fn(() => getBillingAddress()),
-    getCustomer: jest.fn(() => getCustomer()),
 };
 
 const createBuyNowCart = jest.fn();
@@ -46,6 +52,7 @@ const signOutCustomer = jest.fn();
 const selectShippingOption = jest.fn();
 const applyStoreCredit = jest.fn();
 const verifyCheckoutSpamProtection = jest.fn();
+const updatePaymentProviderCustomer = jest.fn();
 
 const PaymentIntegrationServiceMock = jest
     .fn<PaymentIntegrationService>()
@@ -69,6 +76,7 @@ const PaymentIntegrationServiceMock = jest
             selectShippingOption,
             applyStoreCredit,
             verifyCheckoutSpamProtection,
+            updatePaymentProviderCustomer,
         };
     });
 

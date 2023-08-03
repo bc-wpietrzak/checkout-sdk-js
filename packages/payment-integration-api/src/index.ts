@@ -64,6 +64,7 @@ export {
     isRequestError,
     isCustomError,
 } from './errors';
+export { Country, Region } from './geography';
 export {
     HostedCardFieldOptions,
     HostedCardFieldOptionsMap,
@@ -130,6 +131,10 @@ export {
 } from './payment';
 export { default as PaymentIntegrationSelectors } from './payment-integration-selectors';
 export { default as PaymentIntegrationService } from './payment-integration-service';
+export {
+    BraintreeAcceleratedCheckoutCustomer,
+    PaymentProviderCustomer,
+} from './payment-provider-customer';
 export {
     Consignment,
     ShippingAddress,
