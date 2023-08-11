@@ -2,37 +2,42 @@ import {
     Address,
     InvalidArgumentError,
     isHostedInstrumentLike,
-    MissingDataError,
-    MissingDataErrorType,
+    isVaultedInstrument,
     OrderFinalizationNotRequiredError,
     OrderPaymentRequestBody,
     OrderRequestBody,
+    Payment,
     PaymentArgumentInvalidError,
     PaymentInitializeOptions,
     PaymentIntegrationService,
     PaymentMethodClientUnavailableError,
     PaymentRequestOptions,
     PaymentStrategy,
+    VaultedInstrument,
 } from '@bigcommerce/checkout-sdk/payment-integration-api';
 
 import {
     BraintreeConnectAddress,
     BraintreeConnectCardComponent,
     BraintreeConnectCardComponentOptions,
-    BraintreeInitializationData,
 } from '../braintree';
-import BraintreeIntegrationService from '../braintree-integration-service';
 
 import { WithBraintreeAcceleratedCheckoutPaymentInitializeOptions } from './braintree-accelerated-checkout-payment-initialize-options';
+import BraintreeAcceleratedCheckoutUtils from './braintree-accelerated-checkout-utils';
 
 export default class BraintreeAcceleratedCheckoutPaymentStrategy implements PaymentStrategy {
     private braintreeConnectCardComponent?: BraintreeConnectCardComponent;
 
     constructor(
         private paymentIntegrationService: PaymentIntegrationService,
-        private braintreeIntegrationService: BraintreeIntegrationService,
+        private braintreeAcceleratedCheckoutUtils: BraintreeAcceleratedCheckoutUtils,
     ) {}
 
+    /**
+     *
+     * Default methods
+     *
+     * */
     async initialize(
         options: PaymentInitializeOptions &
             WithBraintreeAcceleratedCheckoutPaymentInitializeOptions,
@@ -51,40 +56,23 @@ export default class BraintreeAcceleratedCheckoutPaymentStrategy implements Paym
             );
         }
 
-        if (!braintreeacceleratedcheckout.container) {
+        if (
+            !braintreeacceleratedcheckout.onInit ||
+            typeof braintreeacceleratedcheckout.onInit !== 'function'
+        ) {
             throw new InvalidArgumentError(
-                'Unable to initialize payment because "options.braintreeacceleratedcheckout.container" argument is not provided.',
+                'Unable to initialize payment because "options.braintreeacceleratedcheckout.onInit" argument is not provided or it is not a function.',
             );
         }
 
         await this.paymentIntegrationService.loadPaymentMethod(methodId);
+        await this.braintreeAcceleratedCheckoutUtils.initializeBraintreeConnectOrThrow(methodId);
 
-        const state = this.paymentIntegrationService.getState();
-        const { phone } = state.getBillingAddressOrThrow();
-        const { clientToken, initializationData } =
-            state.getPaymentMethodOrThrow<BraintreeInitializationData>(methodId);
+        this.initializeConnectCardComponent();
 
-        if (!clientToken || !initializationData) {
-            throw new MissingDataError(MissingDataErrorType.MissingPaymentMethod);
-        }
-
-        this.braintreeIntegrationService.initialize(clientToken, initializationData);
-
-        const cardComponentOptions: BraintreeConnectCardComponentOptions = {
-            fields: {
-                ...(phone && {
-                    phoneNumber: {
-                        prefill: phone,
-                    },
-                }),
-            },
-        };
-
-        const { ConnectCardComponent } =
-            await this.braintreeIntegrationService.getBraintreeConnect();
-
-        this.braintreeConnectCardComponent = ConnectCardComponent(cardComponentOptions);
-        this.braintreeConnectCardComponent.render(braintreeacceleratedcheckout.container);
+        braintreeacceleratedcheckout.onInit((container) =>
+            this.renderBraintreeAXOComponent(container),
+        );
     }
 
     async execute(orderRequest: OrderRequestBody, options?: PaymentRequestOptions): Promise<void> {
@@ -94,7 +82,12 @@ export default class BraintreeAcceleratedCheckoutPaymentStrategy implements Paym
             throw new PaymentArgumentInvalidError(['payment']);
         }
 
-        const paymentPayload = await this.preparePaymentPayload(payment);
+        const { paymentData, methodId } = payment;
+
+        const paymentPayload =
+            paymentData && isVaultedInstrument(paymentData)
+                ? await this.prepareVaultedInstrumentPaymentPayload(methodId, paymentData)
+                : await this.preparePaymentPayload(methodId, paymentData);
 
         await this.paymentIntegrationService.submitOrder(order, options);
         await this.paymentIntegrationService.submitPayment(paymentPayload);
@@ -107,14 +100,76 @@ export default class BraintreeAcceleratedCheckoutPaymentStrategy implements Paym
     async deinitialize(): Promise<void> {
         this.braintreeConnectCardComponent = undefined;
 
-        await this.braintreeIntegrationService.teardown();
-
         return Promise.resolve();
     }
 
-    private async preparePaymentPayload(payment: OrderPaymentRequestBody) {
-        const { methodId, paymentData } = payment;
+    /**
+     *
+     * Braintree AXO Component rendering method
+     *
+     */
+    private initializeConnectCardComponent() {
+        const state = this.paymentIntegrationService.getState();
+        const { phone } = state.getBillingAddressOrThrow();
 
+        const cardComponentOptions: BraintreeConnectCardComponentOptions = {
+            fields: {
+                ...(phone && {
+                    phoneNumber: {
+                        prefill: phone,
+                    },
+                }),
+            },
+        };
+
+        const { ConnectCardComponent } =
+            this.braintreeAcceleratedCheckoutUtils.getBraintreeConnectOrThrow();
+
+        this.braintreeConnectCardComponent = ConnectCardComponent(cardComponentOptions);
+    }
+
+    private renderBraintreeAXOComponent(container?: string) {
+        const braintreeConnectCardComponent = this.getBraintreeCardComponentOrThrow();
+
+        if (!container) {
+            throw new InvalidArgumentError(
+                'Unable to initialize payment because "container" argument is not provided.',
+            );
+        }
+
+        braintreeConnectCardComponent.render(container);
+    }
+
+    /**
+     *
+     * Payment Payload preparation methods
+     *
+     */
+    private async prepareVaultedInstrumentPaymentPayload(
+        methodId: string,
+        paymentData: VaultedInstrument,
+    ): Promise<Payment> {
+        const deviceSessionId = await this.braintreeAcceleratedCheckoutUtils.getDeviceSessionId();
+
+        const { instrumentId } = paymentData;
+
+        return {
+            methodId,
+            paymentData: {
+                ...paymentData,
+                instrumentId,
+                deviceSessionId,
+                ...(this.isPayPalCommerceInstrument(instrumentId) && {
+                    tokenType: 'paypal_connect',
+                }),
+            },
+        };
+    }
+
+    private async preparePaymentPayload(
+        methodId: string,
+        paymentData: OrderPaymentRequestBody['paymentData'],
+    ): Promise<Payment> {
         const state = this.paymentIntegrationService.getState();
         const billingAddress = state.getBillingAddressOrThrow();
         // Info: shipping can be unavailable for carts with digital items
@@ -154,11 +209,27 @@ export default class BraintreeAcceleratedCheckoutPaymentStrategy implements Paym
         };
     }
 
+    /**
+     *
+     * Other methods
+     *
+     */
     private getBraintreeCardComponentOrThrow() {
         if (!this.braintreeConnectCardComponent) {
             throw new PaymentMethodClientUnavailableError();
         }
 
         return this.braintreeConnectCardComponent;
+    }
+
+    private isPayPalCommerceInstrument(instrumentId: string): boolean {
+        const state = this.paymentIntegrationService.getState();
+        const { instruments } = state.getPaymentProviderCustomerOrThrow();
+
+        const paypalConnectInstruments = instruments || [];
+
+        return !!paypalConnectInstruments.find(
+            (instrument) => instrument.bigpayToken === instrumentId,
+        );
     }
 }

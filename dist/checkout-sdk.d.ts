@@ -1533,7 +1533,7 @@ declare interface BoltPaymentInitializeOptions {
 
 declare interface BraintreeAcceleratedCheckoutCustomer {
     authenticationState?: string;
-    addresses?: AddressRequestBody[];
+    addresses?: CustomerAddress[];
     instruments?: CardInstrument[];
 }
 
@@ -1552,7 +1552,7 @@ declare interface BraintreeAcceleratedCheckoutCustomer {
  * service.initializePayment({
  *     methodId: 'braintreeacceleratedcheckout',
  *     braintreeacceleratedcheckout: {
- *         container: '#container',
+ *         onInit: (renderPayPalComponentMethod) => renderPayPalComponentMethod('#container-id');
  *     },
  * });
  * ```
@@ -1561,7 +1561,7 @@ declare interface BraintreeAcceleratedCheckoutPaymentInitializeOptions {
     /**
      * The CSS selector of a container where the payment widget should be inserted into.
      */
-    container: string;
+    onInit?: (renderPayPalComponentMethod: (container: string) => void) => void;
 }
 
 declare interface BraintreeError extends Error {
@@ -2489,7 +2489,9 @@ declare interface CheckoutSelectors {
  */
 declare class CheckoutService {
     private _store;
+    private _storeProjection;
     private _extensionMessenger;
+    private _extensionEventBroadcaster;
     private _billingAddressActionCreator;
     private _checkoutActionCreator;
     private _configActionCreator;
@@ -2513,9 +2515,7 @@ declare class CheckoutService {
     private _subscriptionsActionCreator;
     private _formFieldsActionCreator;
     private _extensionActionCreator;
-    private _storeProjection;
     private _errorTransformer;
-    private _selectorsFactory;
     /**
      * Returns a snapshot of the current checkout state.
      *
@@ -6089,6 +6089,7 @@ declare interface NonceInstrument {
     shouldSaveInstrument?: boolean;
     shouldSetAsDefaultInstrument?: boolean;
     deviceSessionId?: string;
+    tokenType?: string;
 }
 
 declare type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;

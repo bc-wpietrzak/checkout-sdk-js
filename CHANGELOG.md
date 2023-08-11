@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.421.1](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.421.0...v1.421.1) (2023-08-10)
+
+## [1.421.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.420.0...v1.421.0) (2023-08-09)
+
+
+### Features
+
+* **payment:** PAYPAL-000 updated paypal connect address mapper to receive CustomerAddress instead of Address ([#2101](https://github.com/bigcommerce/checkout-sdk-js/issues/2101)) ([bb01b20](https://github.com/bigcommerce/checkout-sdk-js/commit/bb01b201d84abe0d6ee9d088b916bf074dab4744))
+
+## [1.420.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.419.0...v1.420.0) (2023-08-08)
+
+
+### Features
+
+* **payment:** PAYPAL-2692 removed this.paypalSdk ([f2b56f3](https://github.com/bigcommerce/checkout-sdk-js/commit/f2b56f3c636ca3e43083945b6d24aed64aeea254))
+
+## [1.419.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.418.1...v1.419.0) (2023-08-08)
+
+
+### Features
+
+* **payment:** PAYPAL-2737 updated Braintree AXO strategy with vaulted instruments implementation ([#2098](https://github.com/bigcommerce/checkout-sdk-js/issues/2098)) ([4b98c9e](https://github.com/bigcommerce/checkout-sdk-js/commit/4b98c9e617ca55a696d3c204915595a8019cc42e))
+
+### [1.418.1](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.418.0...v1.418.1) (2023-08-08)
+
+## [1.418.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.417.0...v1.418.0) (2023-08-07)
+
+
+### Features
+
+* **extension:** CHECKOUT-7611 Notify extension when consignment changes ([61c0626](https://github.com/bigcommerce/checkout-sdk-js/commit/61c0626a5408a8edaed6832b16c1fd6a115fe65e))
+* **extension:** CHECKOUT-7611 Notify extension when shipping country changes ([cf181b2](https://github.com/bigcommerce/checkout-sdk-js/commit/cf181b2533c62b9ca6dd089e3112b29fbc058456))
+
+
+### Code Refactoring
+
+* **extension:** CHECKOUT-7611 Pass public selectors to state change subscribers ([8128e92](https://github.com/bigcommerce/checkout-sdk-js/commit/8128e927a040d62892e99c295733515a9f05368d))
+* **extension:** CHECKOUT-7611 Remove shipping country change event ([d170b3a](https://github.com/bigcommerce/checkout-sdk-js/commit/d170b3a6a7cd31743e247544b837049dcf6c2cd9))
+* **payment:** PAYPAL-2813 created BraintreeAcceleratedCheckoutUtils class ([#2096](https://github.com/bigcommerce/checkout-sdk-js/issues/2096)) ([b7b053b](https://github.com/bigcommerce/checkout-sdk-js/commit/b7b053bbaa0e86c1f4f5de83566c159871efe29e))
+
+## [1.417.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.416.0...v1.417.0) (2023-08-03)
+
+
+### Features
+
+* **payment:** PAYPAL-2797 pass customers data to local storage after authentication (Braintree AXO) ([#2092](https://github.com/bigcommerce/checkout-sdk-js/issues/2092)) ([1d2f287](https://github.com/bigcommerce/checkout-sdk-js/commit/1d2f287997b3808b2ac04c36bf38c0b6447172fa))
+
+## [1.416.0](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.415.1...v1.416.0) (2023-08-03)
+
+
+### Features
+
+* **payment:** PAYPAL-2804 added country to each PayPal Connect customer address to use it on client side for BT AXO ([#2094](https://github.com/bigcommerce/checkout-sdk-js/issues/2094)) ([c695c5a](https://github.com/bigcommerce/checkout-sdk-js/commit/c695c5a4ba23adf6c3571c02ac262008617cccdc))
+
 ### [1.415.1](https://github.com/bigcommerce/checkout-sdk-js/compare/v1.415.0...v1.415.1) (2023-08-03)
 
 
