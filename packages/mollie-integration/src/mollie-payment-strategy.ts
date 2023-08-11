@@ -54,6 +54,8 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
     async initialize(
         options: PaymentInitializeOptions & WithMolliePaymentInitializeOptions,
     ): Promise<void> {
+        console.log('initialize');
+
         const { mollie, methodId, gatewayId } = options;
 
         if (!mollie) {
@@ -112,36 +114,30 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
             this._mountElements();
         }
 
-        this.unsubscribe = this.paymentIntegrationService.subscribe(
-            () => {
-                if (
-                    state.isPaymentMethodInitialized({
-                        methodId: options.methodId,
-                        gatewayId: options.gatewayId,
-                    })
-                ) {
-                    const element = document.getElementById(`${gatewayId}-${methodId}-paragraph`);
+        this.unsubscribe = () => {
+            console.log('unsubscribe');
 
-                    if (element) {
-                        element.remove();
-                    }
+            const statee = this.paymentIntegrationService.getState();
 
-                    mollie.disableButton(false);
+            if (
+                statee.isPaymentMethodInitialized({
+                    methodId: options.methodId,
+                    gatewayId: options.gatewayId,
+                })
+            ) {
+                const element = document.getElementById(`${gatewayId}-${methodId}-paragraph`);
 
-                    this._loadPaymentMethodsAllowed(mollie, methodId, gatewayId);
+                if (element) {
+                    element.remove();
                 }
-            },
-            () => {
-                const checkout = this.paymentIntegrationService.getState().getCheckout();
 
-                return checkout && checkout.outstandingBalance;
-            },
-            () => {
-                const checkout = this.paymentIntegrationService.getState().getCheckout();
+                mollie.disableButton(false);
 
-                return checkout && checkout.coupons;
-            },
-        );
+                this._loadPaymentMethodsAllowed(mollie, methodId, gatewayId);
+            }
+        };
+
+        this.unsubscribe();
 
         this._loadPaymentMethodsAllowed(mollie, methodId, gatewayId);
 
@@ -149,6 +145,8 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
     }
 
     async execute(payload: OrderRequestBody, options?: PaymentRequestOptions): Promise<void> {
+        console.log('execute');
+
         const { payment, ...order } = payload;
         const paymentData = payment?.paymentData;
 
@@ -174,10 +172,14 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
     }
 
     finalize(): Promise<void> {
+        console.log('finalize');
+
         return Promise.resolve();
     }
 
     deinitialize(options?: PaymentRequestOptions): Promise<void> {
+        console.log('deinitialize');
+
         if (this.unsubscribe) {
             this.unsubscribe();
         }
@@ -219,6 +221,8 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
     }
 
     protected async executeWithCC(payment: OrderPaymentRequestBody): Promise<void> {
+        console.log('execute with cc');
+
         const paymentData = payment.paymentData;
         /* eslint-disable */
         const shouldSaveInstrument = (paymentData as HostedInstrument).shouldSaveInstrument;
@@ -417,7 +421,6 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
 
                 if (containerId) {
                     const container = document.getElementById(containerId);
-                    console.log(container)
 
                     if (container) {
                         const paragraph = document.createElement('p') ;

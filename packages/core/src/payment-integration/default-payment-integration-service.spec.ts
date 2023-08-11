@@ -115,7 +115,6 @@ describe('DefaultPaymentIntegrationService', () => {
             loadCurrentOrder: jest.fn(async () => () => createAction('LOAD_CURRENT_ORDER')),
             submitOrder: jest.fn(async () => () => createAction('SUBMIT_ORDER')),
             finalizeOrder: jest.fn(async () => () => createAction('FINALIZE_ORDER')),
-            loadCurrentOrder: jest.fn(async () => () => createAction('LOAD_CURRENT_ORDER')),
         };
 
         billingAddressActionCreator = {
