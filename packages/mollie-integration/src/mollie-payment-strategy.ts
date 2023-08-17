@@ -72,8 +72,7 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
 
         each(controllers, (controller) => controller.remove());
 
-        const state = this.paymentIntegrationService.getState();
-        const storeConfig = state.getStoreConfig();
+        const storeConfig = this.paymentIntegrationService.getState().getStoreConfig();
 
         if (!storeConfig) {
             throw new MissingDataError(MissingDataErrorType.MissingCheckoutConfig);
@@ -131,6 +130,8 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
             }
         };
 
+        this.unsubscribe();
+
         this._loadPaymentMethodsAllowed(mollie, methodId, gatewayId);
 
         return Promise.resolve();
@@ -157,7 +158,7 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
 
             return await this.executeWithAPM(payment);
         } catch (error) {
-            return this._processAdditionalAction(error);
+            await this._processAdditionalAction(error);
         }
     }
 
@@ -284,7 +285,7 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
 
     private mountCardVerificationfields(formOptions: HostedFormOptions): Promise<HostedForm> {
         /* eslint-disable */
-        return new Promise(async (resolve , reject) => {
+        return new Promise(async (resolve, reject) => {
             try {
                 const config = this.paymentIntegrationService.getState().getStoreConfig();
                 const bigpayBaseUrl = config?.paymentSettings.bigpayBaseUrl;
@@ -317,8 +318,8 @@ export default class MolliePaymentStrategy implements PaymentStrategy {
         return !!options.form?.fields;
     }
 
-    private _processAdditionalAction(error: any): Promise<void> {
-        if (!(error instanceof RequestError) || !some(error.body.errors, {code: 'additional_action_required'})) {
+    private _processAdditionalAction(error: any): Promise<any> {
+        if (!(error instanceof RequestError) && !some(error.body.errors, {code: 'additional_action_required'})) {
             return Promise.reject(error);
         }
         const { additional_action_required: { data : { redirect_url } } } = error.body;

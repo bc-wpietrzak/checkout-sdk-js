@@ -95,6 +95,24 @@ describe('MolliePaymentStrategy', () => {
                 await expect(response).rejects.toThrow(InvalidArgumentError);
             });
 
+            it('does not load Mollie if gatewayId is not provided', async () => {
+                options.gatewayId = undefined;
+
+                const response = strategy.initialize(options);
+
+                await expect(response).rejects.toThrow(InvalidArgumentError);
+            });
+
+            it('does not load Mollie if store config is not provided', async () => {
+                jest.spyOn(paymentIntegrationService.getState(), 'getStoreConfig').mockReturnValue(
+                    undefined,
+                );
+
+                const response = strategy.initialize(options);
+
+                await expect(response).rejects.toThrow(MissingDataError);
+            });
+
             it('does initialize mollie and create 4 components', async () => {
                 await strategy.initialize(options);
 
@@ -322,6 +340,7 @@ describe('MolliePaymentStrategy', () => {
                     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                     `${optionsMock.gatewayId}-${optionsMock.methodId}-paragraph`,
                 );
+                expect(container.remove).toHaveBeenCalled();
                 expect(disableButtonMock).toHaveBeenCalledWith(false);
             });
         });
@@ -504,7 +523,6 @@ describe('MolliePaymentStrategy', () => {
             await strategy.initialize(initializeOptions);
             await strategy.execute(payload);
 
-            expect(form.submit).toHaveBeenCalled();
             expect(form.submit).toHaveBeenCalledWith(payload.payment);
         });
 

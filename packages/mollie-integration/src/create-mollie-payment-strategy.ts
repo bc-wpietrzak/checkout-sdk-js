@@ -17,4 +17,4 @@ const createMolliePaymentStrategy: PaymentStrategyFactory<MolliePaymentStrategy>
     );
 };
 
-export default toResolvableModule(createMolliePaymentStrategy, [{ id: 'mollie' }]);
+export default toResolvableModule(createMolliePaymentStrategy, [{ gateway: 'mollie' }]);
