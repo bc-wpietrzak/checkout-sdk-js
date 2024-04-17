@@ -1,67 +1,49 @@
-import { createClient as createPaymentClient } from '@bigcommerce/bigpay-client';
 import { createAction, createErrorAction } from '@bigcommerce/data-store';
 import { createFormPoster, FormPoster } from '@bigcommerce/form-poster';
-import { createRequestSender } from '@bigcommerce/request-sender';
-import { createScriptLoader } from '@bigcommerce/script-loader';
 import { noop, omit } from 'lodash';
 import { Observable, of } from 'rxjs';
 
 import {
-    CheckoutRequestSender,
     CheckoutStore,
-    CheckoutValidator,
     createCheckoutStore,
-} from '../../../checkout';
-import { getCheckoutStoreState } from '../../../checkout/checkouts.mock';
-import { RequestError } from '../../../common/error/errors';
-import { getResponse } from '../../../common/http-request/responses.mock';
-import { HostedFormFactory } from '../../../hosted-form';
+} from '../../core/src/checkout';
+import { getCheckoutStoreState } from '../../core/src/checkout/checkouts.mock';
+import { RequestError } from '../../core/src/common/error/errors';
+import { getResponse } from '../../core/src/common/http-request/responses.mock';
+import { HostedFormFactory } from '../../core/src/hosted-form';
 import {
     FinalizeOrderAction,
     OrderActionCreator,
     OrderActionType,
-    OrderRequestSender,
     SubmitOrderAction,
-} from '../../../order';
-import { OrderFinalizationNotRequiredError } from '../../../order/errors';
-import { getOrderRequestBody } from '../../../order/internal-orders.mock';
-import { getOrder } from '../../../order/orders.mock';
-import { createSpamProtection, PaymentHumanVerificationHandler } from '../../../spam-protection';
-import PaymentActionCreator from '../../payment-action-creator';
-import { PaymentActionType, SubmitPaymentAction } from '../../payment-actions';
-import PaymentRequestSender from '../../payment-request-sender';
-import PaymentRequestTransformer from '../../payment-request-transformer';
-import * as paymentStatusTypes from '../../payment-status-types';
-import { getErrorPaymentResponseBody } from '../../payments.mock';
-import { CreditCardPaymentStrategy } from '../credit-card';
+} from '../../core/src/order';
+import { OrderFinalizationNotRequiredError } from '../../core/src/order/errors';
+import { getOrderRequestBody } from '../../core/src/order/internal-orders.mock';
+import { getOrder } from '../../core/src/order/orders.mock';
+import PaymentActionCreator from '../../core/src/payment/payment-action-creator';
+import { PaymentActionType, SubmitPaymentAction } from '../../core/src/payment/payment-actions';
+import * as paymentStatusTypes from '../../core/src/payment/payment-status-types';
+import { getErrorPaymentResponseBody } from '../../core/src/payment/payments.mock';
+import { CreditCardPaymentStrategy } from '../../core/src/payment/strategies/credit-card';
 
 import ConvergePaymentStrategy from './converge-payment-strategy';
+import { PaymentIntegrationServiceMock } from '@bigcommerce/checkout-sdk/payment-integrations-test-utils';
+import { PaymentIntegrationService } from '@bigcommerce/checkout-sdk/payment-integration-api';
 
-describe('ConvergeaymentStrategy', () => {
+describe('ConvergePaymentStrategy', () => {
     let finalizeOrderAction: Observable<FinalizeOrderAction>;
     let formPoster: FormPoster;
     let hostedFormFactory: HostedFormFactory;
     let orderActionCreator: OrderActionCreator;
     let paymentActionCreator: PaymentActionCreator;
+    let paymentIntegrationService: PaymentIntegrationService;
     let store: CheckoutStore;
-    let orderRequestSender: OrderRequestSender;
     let strategy: ConvergePaymentStrategy;
     let submitOrderAction: Observable<SubmitOrderAction>;
     let submitPaymentAction: Observable<SubmitPaymentAction>;
 
     beforeEach(() => {
-        orderRequestSender = new OrderRequestSender(createRequestSender());
-        orderActionCreator = new OrderActionCreator(
-            orderRequestSender,
-            new CheckoutValidator(new CheckoutRequestSender(createRequestSender())),
-        );
-
-        paymentActionCreator = new PaymentActionCreator(
-            new PaymentRequestSender(createPaymentClient()),
-            orderActionCreator,
-            new PaymentRequestTransformer(),
-            new PaymentHumanVerificationHandler(createSpamProtection(createScriptLoader())),
-        );
+        paymentIntegrationService = new PaymentIntegrationServiceMock();
 
         formPoster = createFormPoster();
         store = createCheckoutStore(getCheckoutStoreState());
@@ -84,10 +66,7 @@ describe('ConvergeaymentStrategy', () => {
         jest.spyOn(paymentActionCreator, 'submitPayment').mockReturnValue(submitPaymentAction);
 
         strategy = new ConvergePaymentStrategy(
-            store,
-            orderActionCreator,
-            paymentActionCreator,
-            hostedFormFactory,
+            paymentIntegrationService,
             formPoster,
         );
     });
