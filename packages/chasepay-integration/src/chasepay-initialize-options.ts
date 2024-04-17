@@ -39,7 +39,7 @@
  * });
  * ```
  */
-export default interface ChasePayInitializeOptions {
+export interface ChasePayInitializeOptions {
     /**
      * This container is used to host the chasepay branding logo.
      * It should be an HTML element.
@@ -62,4 +62,8 @@ export default interface ChasePayInitializeOptions {
      * A callback that gets called when the customer cancels their payment selection.
      */
     onCancel?(): void;
+}
+
+export interface WithChasePayInitializeOptions {
+    chasepay?: ChasePayInitializeOptions;
 }

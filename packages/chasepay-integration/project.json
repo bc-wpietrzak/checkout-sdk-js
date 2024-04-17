@@ -1,0 +1,23 @@
+{
+    "root": "packages/chasepay-integration",
+    "sourceRoot": "packages/chasepay-integration/src",
+    "projectType": "library",
+    "targets": {
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": ["packages/chasepay-integration/**/*.ts"]
+            }
+        },
+        "test": {
+            "executor": "@nrwl/jest:jest",
+            "outputs": ["coverage/packages/chasepay-integration"],
+            "options": {
+                "jestConfig": "packages/chasepay-integration/jest.config.js",
+                "passWithNoTests": true
+            }
+        }
+    },
+    "tags": ["scope:integration"]
+}

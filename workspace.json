@@ -11,6 +11,7 @@
         "bolt-integration": "packages/bolt-integration",
         "braintree-integration": "packages/braintree-integration",
         "braintree-utils": "packages/braintree-utils",
+        "chasepay-integration": "packages/chasepay-integration",
         "core": "packages/core",
         "credit-card-integration": "packages/credit-card-integration",
         "external-integration": "packages/external-integration",

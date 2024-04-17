@@ -1,30 +1,28 @@
 import { RequestSender } from '@bigcommerce/request-sender';
 import { Subject } from 'rxjs';
 import { take } from 'rxjs/operators';
-
-import { CheckoutActionCreator, CheckoutStore, InternalCheckoutSelectors } from '../../../checkout';
 import {
     InvalidArgumentError,
     MissingDataError,
     MissingDataErrorType,
     NotInitializedError,
     NotInitializedErrorType,
-} from '../../../common/error/errors';
-import { SDK_VERSION_HEADERS } from '../../../common/http-request';
+    OrderFinalizationNotRequiredError,
+    OrderRequestBody,
+    Payment,
+    PaymentInitializeOptions,
+    PaymentIntegrationService,
+    PaymentMethodCancelledError,
+    PaymentRequestOptions,
+    PaymentStrategy,
+    SDK_VERSION_HEADERS,
+} from '@bigcommerce/checkout-sdk/payment-integration-api';
+
 import { bindDecorator as bind } from '../../../common/utility';
-import { OrderActionCreator, OrderRequestBody } from '../../../order';
-import { OrderFinalizationNotRequiredError } from '../../../order/errors';
-import { PaymentMethodCancelledError } from '../../errors';
-import Payment from '../../payment';
-import PaymentActionCreator from '../../payment-action-creator';
-import PaymentMethodActionCreator from '../../payment-method-action-creator';
-import { PaymentInitializeOptions, PaymentRequestOptions } from '../../payment-request-options';
-import PaymentStrategyActionCreator from '../../payment-strategy-action-creator';
-import PaymentStrategy from '../payment-strategy';
 import { WepayRiskClient } from '../wepay';
 
 import { ChasePay, ChasePayEventType, ChasePaySuccessPayload } from './chasepay';
-import ChasePayInitializeOptions from './chasepay-initialize-options';
+import { ChasePayInitializeOptions, WithChasePayInitializeOptions } from './chasepay-initialize-options';
 import ChasePayScriptLoader from './chasepay-script-loader';
 
 export default class ChasePayPaymentStrategy implements PaymentStrategy {
@@ -34,12 +32,7 @@ export default class ChasePayPaymentStrategy implements PaymentStrategy {
     private _walletEvent$: Subject<{ type: ChasePayEventType }>;
 
     constructor(
-        private _store: CheckoutStore,
-        private _checkoutActionCreator: CheckoutActionCreator,
-        private _orderActionCreator: OrderActionCreator,
-        private _paymentActionCreator: PaymentActionCreator,
-        private _paymentMethodActionCreator: PaymentMethodActionCreator,
-        private _paymentStrategyActionCreator: PaymentStrategyActionCreator,
+        private _paymentIntegrationService: PaymentIntegrationService,
         private _requestSender: RequestSender,
         private _chasePayScriptLoader: ChasePayScriptLoader,
         private _wepayRiskClient: WepayRiskClient,
@@ -47,7 +40,7 @@ export default class ChasePayPaymentStrategy implements PaymentStrategy {
         this._walletEvent$ = new Subject();
     }
 
-    initialize(options: PaymentInitializeOptions): Promise<InternalCheckoutSelectors> {
+    initialize(options: PaymentInitializeOptions & WithChasePayInitializeOptions): Promise<InternalCheckoutSelectors> {
         this._methodId = options.methodId;
 
         if (!options.chasepay) {
@@ -64,10 +57,10 @@ export default class ChasePayPaymentStrategy implements PaymentStrategy {
             this._walletButton.addEventListener('click', this._handleWalletButtonClick);
         }
 
-        return this._configureWallet(options.chasepay).then(() => this._store.getState());
+        return this._configureWallet(options.chasepay);
     }
 
-    deinitialize(): Promise<InternalCheckoutSelectors> {
+    deinitialize(): Promise<void> {
         if (this._walletButton) {
             this._walletButton.removeEventListener('click', this._handleWalletButtonClick);
         }
@@ -75,13 +68,13 @@ export default class ChasePayPaymentStrategy implements PaymentStrategy {
         this._walletButton = undefined;
         this._chasePayClient = undefined;
 
-        return Promise.resolve(this._store.getState());
+        return Promise.resolve();
     }
 
     execute(
         payload: OrderRequestBody,
         options?: PaymentRequestOptions,
-    ): Promise<InternalCheckoutSelectors> {
+    ): Promise<void> {
         return this._getPayment()
             .catch((error) => {
                 if (error.subtype === MissingDataErrorType.MissingPayment) {
@@ -93,14 +86,14 @@ export default class ChasePayPaymentStrategy implements PaymentStrategy {
             .then((payment) => this._createOrder(payment, payload.useStoreCredit, options));
     }
 
-    finalize(): Promise<InternalCheckoutSelectors> {
+    finalize(): Promise<void> {
         return Promise.reject(new OrderFinalizationNotRequiredError());
     }
 
     private _configureWallet(options: ChasePayInitializeOptions): Promise<void> {
-        const state = this._store.getState();
-        const paymentMethod = state.paymentMethods.getPaymentMethod(this._methodId);
-        const storeConfig = state.config.getStoreConfig();
+        const state = this._paymentIntegrationService.getState();
+        const paymentMethod = state.getPaymentMethod(this._methodId);
+        const storeConfig = state.getStoreConfig();
 
         if (!paymentMethod) {
             throw new MissingDataError(MissingDataErrorType.MissingPaymentMethod);
@@ -150,35 +143,29 @@ export default class ChasePayPaymentStrategy implements PaymentStrategy {
     }
 
     private _displayWallet(): Promise<InternalCheckoutSelectors> {
-        return this._store.dispatch(
-            this._paymentStrategyActionCreator.widgetInteraction(
-                () => {
-                    this._store
-                        .dispatch(
-                            this._paymentMethodActionCreator.loadPaymentMethod(this._methodId),
-                        )
-                        .then((state) => {
-                            const paymentMethod = state.paymentMethods.getPaymentMethod(
-                                this._methodId,
-                            );
+        return this._paymentIntegrationService.widgetInteraction(
+                async () => {
+                    await this._paymentIntegrationService.loadPaymentMethod(this._methodId);
 
-                            if (!this._chasePayClient) {
-                                throw new NotInitializedError(
-                                    NotInitializedErrorType.PaymentNotInitialized,
-                                );
-                            }
+                    const state = this._paymentIntegrationService.getState();
+                    const paymentMethod = state.getPaymentMethod(this._methodId);
 
-                            if (!paymentMethod) {
-                                throw new MissingDataError(
-                                    MissingDataErrorType.MissingPaymentMethod,
-                                );
-                            }
+                    if (!this._chasePayClient) {
+                        throw new NotInitializedError(
+                            NotInitializedErrorType.PaymentNotInitialized,
+                        );
+                    }
 
-                            this._chasePayClient.showLoadingAnimation();
-                            this._chasePayClient.startCheckout(
-                                paymentMethod.initializationData.digitalSessionId,
-                            );
-                        });
+                    if (!paymentMethod?.initializationData) {
+                        throw new MissingDataError(
+                            MissingDataErrorType.MissingPaymentMethod,
+                        );
+                    }
+
+                    this._chasePayClient.showLoadingAnimation();
+                    this._chasePayClient.startCheckout(
+                        paymentMethod.initializationData.digitalSessionId,
+                    );
 
                     // Wait for payment selection
                     return new Promise<void>((resolve, reject) => {
@@ -194,14 +181,12 @@ export default class ChasePayPaymentStrategy implements PaymentStrategy {
                     });
                 },
                 { methodId: this._methodId },
-            ),
-            { queueId: 'widgetInteraction' },
-        );
+            );
     }
 
     private _setSessionToken(sessionToken: string): Promise<InternalCheckoutSelectors> {
-        const state = this._store.getState();
-        const paymentMethod = state.paymentMethods.getPaymentMethod(this._methodId);
+        const state = this._paymentIntegrationService.getState();
+        const paymentMethod = state.getPaymentMethod(this._methodId);
         const merchantRequestId =
             paymentMethod && paymentMethod.initializationData.merchantRequestId;
 
@@ -223,19 +208,16 @@ export default class ChasePayPaymentStrategy implements PaymentStrategy {
                 // Re-hydrate checkout data
                 .then(() =>
                     Promise.all([
-                        this._store.dispatch(this._checkoutActionCreator.loadCurrentCheckout()),
-                        this._store.dispatch(
-                            this._paymentMethodActionCreator.loadPaymentMethod(this._methodId),
-                        ),
+                        this._paymentIntegrationService.loadCurrentCheckout(),
+                        this._paymentIntegrationService.loadPaymentMethod(this._methodId),
                     ]),
                 )
-                .then(() => this._store.getState())
         );
     }
 
     private _getPayment(): Promise<Payment> {
         return this._store
-            .dispatch(this._paymentMethodActionCreator.loadPaymentMethod(this._methodId))
+            .dispatch(this._paymentIntegrationService.loadPaymentMethod(this._methodId))
             .then(() => {
                 if (this._methodId === 'wepay') {
                     return this._wepayRiskClient
@@ -246,10 +228,10 @@ export default class ChasePayPaymentStrategy implements PaymentStrategy {
                 return '';
             })
             .then((riskToken) => {
-                const state = this._store.getState();
-                const paymentMethod = state.paymentMethods.getPaymentMethod(this._methodId);
+                const state = this._paymentIntegrationService.getState();
+                const paymentMethod = state.getPaymentMethod(this._methodId);
 
-                if (!paymentMethod) {
+                if (!paymentMethod?.initializationData) {
                     throw new MissingDataError(MissingDataErrorType.MissingPaymentMethod);
                 }
 
@@ -278,14 +260,13 @@ export default class ChasePayPaymentStrategy implements PaymentStrategy {
             });
     }
 
-    private _createOrder(
+    private async _createOrder(
         payment: Payment,
         useStoreCredit?: boolean,
         options?: PaymentRequestOptions,
-    ): Promise<InternalCheckoutSelectors> {
-        return this._store
-            .dispatch(this._orderActionCreator.submitOrder({ useStoreCredit }, options))
-            .then(() => this._store.dispatch(this._paymentActionCreator.submitPayment(payment)));
+    ): Promise<void> {
+        await this._paymentIntegrationService.submitOrder({ useStoreCredit }, options);
+        await this._paymentIntegrationService.submitPayment(payment);
     }
 
     @bind

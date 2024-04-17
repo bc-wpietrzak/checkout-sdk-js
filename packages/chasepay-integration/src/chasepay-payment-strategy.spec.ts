@@ -3,32 +3,33 @@ import { createRequestSender, RequestSender } from '@bigcommerce/request-sender'
 import { createScriptLoader, ScriptLoader } from '@bigcommerce/script-loader';
 import { noop } from 'lodash';
 import { Observable, of } from 'rxjs';
+import {
+    InvalidArgumentError,
+    MissingDataError,
+    OrderActionType,
+    OrderFinalizationNotRequiredError,
+    OrderRequestBody,
+    PaymentActionType,
+    PaymentInitializeOptions,
+    PaymentStrategy,
+} from '@bigcommerce/checkout-sdk/payment-integration-api';
+import {
+    getOrderRequestBody,
+} from '@bigcommerce/checkout-sdk/payment-integrations-test-utils';
 
 import { getCartState } from '../../../cart/carts.mock';
 import {
-    CheckoutActionCreator,
-    CheckoutRequestSender,
     CheckoutStore,
-    CheckoutValidator,
     createCheckoutStore,
 } from '../../../checkout';
 import { getCheckoutState } from '../../../checkout/checkouts.mock';
-import { InvalidArgumentError, MissingDataError } from '../../../common/error/errors';
-import { ConfigActionCreator, ConfigRequestSender } from '../../../config';
 import { getConfigState } from '../../../config/configs.mock';
 import { getCustomerState } from '../../../customer/customers.mock';
-import { FormFieldsActionCreator, FormFieldsRequestSender } from '../../../form';
 import { getFormFieldsState } from '../../../form/form.mock';
-import { OrderActionCreator, OrderActionType, OrderRequestBody } from '../../../order';
-import { OrderFinalizationNotRequiredError } from '../../../order/errors';
-import { getOrderRequestBody } from '../../../order/internal-orders.mock';
+import { OrderActionCreator } from '../../../order';
 import {
-    createPaymentClient,
-    createPaymentStrategyRegistry,
-    createPaymentStrategyRegistryV2,
     PaymentActionCreator,
     PaymentMethod,
-    PaymentMethodActionCreator,
 } from '../../../payment';
 import { createPaymentIntegrationService } from '../../../payment-integration';
 import { getChasePay, getPaymentMethodsState } from '../../../payment/payment-methods.mock';
@@ -36,33 +37,17 @@ import {
     ChasePayEventType,
     ChasePayScriptLoader,
     JPMC,
-} from '../../../payment/strategies/chasepay';
-import { getChasePayScriptMock } from '../../../payment/strategies/chasepay/chasepay.mock';
-import {
-    createSpamProtection,
-    PaymentHumanVerificationHandler,
-    SpamProtectionActionCreator,
-    SpamProtectionRequestSender,
-} from '../../../spam-protection';
-import { PaymentActionType } from '../../payment-actions';
-import PaymentMethodRequestSender from '../../payment-method-request-sender';
-import { PaymentInitializeOptions } from '../../payment-request-options';
-import PaymentRequestSender from '../../payment-request-sender';
-import PaymentRequestTransformer from '../../payment-request-transformer';
-import PaymentStrategyActionCreator from '../../payment-strategy-action-creator';
-import PaymentStrategy from '../payment-strategy';
+} from '.';
+import { getChasePayScriptMock } from './chasepay.mock';
 import { WepayRiskClient } from '../wepay';
 
-import ChasePayInitializeOptions from './chasepay-initialize-options';
+import { ChasePayInitializeOptions } from './chasepay-initialize-options';
 import ChasePayPaymentStrategy from './chasepay-payment-strategy';
 
 describe('ChasePayPaymentStrategy', () => {
     const testRiskToken = 'test-risk-token';
     let container: HTMLDivElement;
     let walletButton: HTMLAnchorElement;
-    let checkoutActionCreator: CheckoutActionCreator;
-    let paymentMethodActionCreator: PaymentMethodActionCreator;
-    let paymentStrategyActionCreator: PaymentStrategyActionCreator;
     let paymentActionCreator: PaymentActionCreator;
     let paymentMethodMock: PaymentMethod;
     let orderActionCreator: OrderActionCreator;
@@ -117,60 +102,16 @@ describe('ChasePayPaymentStrategy', () => {
 
         requestSender = createRequestSender();
 
-        const paymentClient = createPaymentClient(store);
-        const spamProtection = createSpamProtection(createScriptLoader());
-        const registry = createPaymentStrategyRegistry(
-            store,
-            paymentClient,
-            requestSender,
-            spamProtection,
-            'en_US',
-        );
         const paymentIntegrationService = createPaymentIntegrationService(store);
-        const registryV2 = createPaymentStrategyRegistryV2(paymentIntegrationService);
-        const _requestSender: PaymentMethodRequestSender = new PaymentMethodRequestSender(
-            requestSender,
-        );
 
-        paymentMethodActionCreator = new PaymentMethodActionCreator(_requestSender);
-        orderActionCreator = new OrderActionCreator(
-            paymentClient,
-            new CheckoutValidator(new CheckoutRequestSender(createRequestSender())),
-        );
-        paymentActionCreator = new PaymentActionCreator(
-            new PaymentRequestSender(paymentClient),
-            orderActionCreator,
-            new PaymentRequestTransformer(),
-            new PaymentHumanVerificationHandler(createSpamProtection(createScriptLoader())),
-        );
-        checkoutActionCreator = new CheckoutActionCreator(
-            new CheckoutRequestSender(requestSender),
-            new ConfigActionCreator(new ConfigRequestSender(requestSender)),
-            new FormFieldsActionCreator(new FormFieldsRequestSender(requestSender)),
-        );
-        paymentStrategyActionCreator = new PaymentStrategyActionCreator(
-            registry,
-            registryV2,
-            orderActionCreator,
-            new SpamProtectionActionCreator(
-                spamProtection,
-                new SpamProtectionRequestSender(requestSender),
-            ),
-        );
-
-        jest.spyOn(paymentStrategyActionCreator, 'widgetInteraction');
+        jest.spyOn(paymentIntegrationService, 'widgetInteraction');
         jest.spyOn(requestSender, 'post');
         JPMC.ChasePay.showLoadingAnimation = jest
             .fn(() => jest.fn(noop))
             .mockReturnValue(Promise.resolve(store.getState()));
 
         strategy = new ChasePayPaymentStrategy(
-            store,
-            checkoutActionCreator,
-            orderActionCreator,
-            paymentActionCreator,
-            paymentMethodActionCreator,
-            paymentStrategyActionCreator,
+            paymentIntegrationService,
             requestSender,
             chasePayScriptLoader,
             wepayRiskClient,
@@ -186,8 +127,8 @@ describe('ChasePayPaymentStrategy', () => {
         jest.spyOn(walletButton, 'addEventListener');
         jest.spyOn(walletButton, 'removeEventListener');
         jest.spyOn(requestSender, 'post').mockReturnValue(checkoutActionCreator);
-        jest.spyOn(checkoutActionCreator, 'loadCurrentCheckout');
-        jest.spyOn(paymentMethodActionCreator, 'loadPaymentMethod');
+        jest.spyOn(paymentIntegrationService, 'loadCurrentCheckout');
+        jest.spyOn(paymentIntegrationService, 'loadPaymentMethod');
         jest.spyOn(document, 'getElementById');
     });
 
