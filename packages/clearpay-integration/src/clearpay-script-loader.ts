@@ -1,15 +1,17 @@
 import { ScriptLoader } from '@bigcommerce/script-loader';
 
-import { PaymentMethodClientUnavailableError } from '../../errors';
-import PaymentMethod from '../../payment-method';
+import {
+    PaymentMethod,
+    PaymentMethodClientUnavailableError,
+} from '@bigcommerce/checkout-sdk/payment-integration-api';
 
 import ClearpaySdk from './clearpay-sdk';
 import ClearpayWindow from './clearpay-window';
 
-const SCRIPTS_DEFAULT = {
-    PROD: '//portal.clearpay.co.uk/afterpay-async.js',
-    SANDBOX: '//portal.sandbox.clearpay.co.uk/afterpay-async.js',
-};
+enum SCRIPTS_DEFAULT {
+    PROD = '//portal.clearpay.co.uk/afterpay-async.js',
+    SANDBOX = '//portal.sandbox.clearpay.co.uk/afterpay-async.js',
+}
 
 export default class ClearpayScriptLoader {
     constructor(private _scriptLoader: ScriptLoader, public _window: ClearpayWindow = window) {}

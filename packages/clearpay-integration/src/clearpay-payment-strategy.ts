@@ -1,25 +1,22 @@
 import { noop } from 'lodash';
-
-import { CheckoutStore, CheckoutValidator, InternalCheckoutSelectors } from '../../../checkout';
 import {
     InvalidArgumentError,
     MissingDataError,
     MissingDataErrorType,
     NotInitializedError,
     NotInitializedErrorType,
+    OrderFinalizationNotCompletedError,
+    OrderRequestBody,
+    PaymentArgumentInvalidError,
+    PaymentInitializeOptions,
+    PaymentIntegrationSelectors,
+    PaymentIntegrationService,
+    PaymentMethod,
+    PaymentRequestOptions,
+    PaymentStrategy,
     RequestError,
-} from '../../../common/error/errors';
-import { RequestOptions } from '../../../common/http-request';
-import { OrderActionCreator, OrderRequestBody } from '../../../order';
-import { OrderFinalizationNotCompletedError } from '../../../order/errors';
-import { RemoteCheckoutRequestSender } from '../../../remote-checkout';
-import { StoreCreditActionCreator } from '../../../store-credit';
-import { PaymentArgumentInvalidError } from '../../errors';
-import PaymentActionCreator from '../../payment-action-creator';
-import PaymentMethod from '../../payment-method';
-import PaymentMethodActionCreator from '../../payment-method-action-creator';
-import { PaymentInitializeOptions, PaymentRequestOptions } from '../../payment-request-options';
-import PaymentStrategy from '../payment-strategy';
+    RequestOptions,
+} from '@bigcommerce/checkout-sdk/payment-integration-api';
 
 import ClearpayScriptLoader from './clearpay-script-loader';
 import ClearpaySdk from './clearpay-sdk';
@@ -28,37 +25,29 @@ export default class ClearpayPaymentStrategy implements PaymentStrategy {
     private _clearpaySdk?: ClearpaySdk;
 
     constructor(
-        private _store: CheckoutStore,
-        private _checkoutValidator: CheckoutValidator,
-        private _orderActionCreator: OrderActionCreator,
-        private _paymentActionCreator: PaymentActionCreator,
-        private _paymentMethodActionCreator: PaymentMethodActionCreator,
-        private _remoteCheckoutRequestSender: RemoteCheckoutRequestSender,
-        private _storeCreditActionCreator: StoreCreditActionCreator,
+        private _paymentIntegrationService: PaymentIntegrationService,
         private _clearpayScriptLoader: ClearpayScriptLoader,
     ) {}
 
-    async initialize(options: PaymentInitializeOptions): Promise<InternalCheckoutSelectors> {
-        const {
-            paymentMethods: { getPaymentMethodOrThrow },
-        } = this._store.getState();
+    async initialize(options: PaymentInitializeOptions): Promise<void> {
+        console.log('it works!')
+        
+        const { getPaymentMethodOrThrow } = this._paymentIntegrationService.getState();
         const paymentMethod = getPaymentMethodOrThrow(options.methodId, options.gatewayId);
 
         this._clearpaySdk = await this._clearpayScriptLoader.load(paymentMethod);
-
-        return this._store.getState();
     }
 
-    deinitialize(): Promise<InternalCheckoutSelectors> {
+    deinitialize(): Promise<void> {
         this._clearpaySdk = undefined;
 
-        return Promise.resolve(this._store.getState());
+        return Promise.resolve();
     }
 
     async execute(
         payload: OrderRequestBody,
         options?: PaymentRequestOptions,
-    ): Promise<InternalCheckoutSelectors> {
+    ): Promise<void> {
         if (!payload.payment) {
             throw new PaymentArgumentInvalidError(['payment.gatewayId', 'payment.methodId']);
         }
@@ -69,20 +58,18 @@ export default class ClearpayPaymentStrategy implements PaymentStrategy {
             throw new PaymentArgumentInvalidError(['payment.gatewayId', 'payment.methodId']);
         }
 
-        const { isStoreCreditApplied: useStoreCredit } = this._store
+        const { isStoreCreditApplied: useStoreCredit } = this._paymentIntegrationService
             .getState()
-            .checkout.getCheckoutOrThrow();
-        let state = this._store.getState();
+            .getCheckoutOrThrow();
+        let state = this._paymentIntegrationService.getState();
 
         if (useStoreCredit !== undefined) {
-            state = await this._store.dispatch(
-                this._storeCreditActionCreator.applyStoreCredit(useStoreCredit),
-            );
+            state = await this._paymentIntegrationService.applyStoreCredit(useStoreCredit);
         }
 
-        await this._checkoutValidator.validate(state.checkout.getCheckout(), options);
+        await this._paymentIntegrationService.validateCheckout(state.getCheckout(), options);
 
-        const { countryCode } = this._store.getState().billingAddress.getBillingAddressOrThrow();
+        const { countryCode } = this._paymentIntegrationService.getState().getBillingAddressOrThrow();
 
         if (!this._isCountrySupported(countryCode)) {
             throw new InvalidArgumentError(
@@ -94,17 +81,17 @@ export default class ClearpayPaymentStrategy implements PaymentStrategy {
 
         await this._redirectToClearpay(
             countryCode,
-            state.paymentMethods.getPaymentMethod(methodId, gatewayId),
+            state.getPaymentMethod(methodId, gatewayId),
         );
 
         // Clearpay will handle the rest of the flow so return a promise that doesn't really resolve
         return new Promise(noop);
     }
 
-    async finalize(options: PaymentRequestOptions): Promise<InternalCheckoutSelectors> {
-        const state = this._store.getState();
-        const payment = state.payment.getPaymentId();
-        const config = state.config.getContextConfig();
+    async finalize(options: PaymentRequestOptions): Promise<void> {
+        const state = this._paymentIntegrationService.getState();
+        const payment = state.getPaymentId();
+        const config = state.getContextConfig();
 
         if (!payment) {
             throw new MissingDataError(MissingDataErrorType.MissingCheckout);
@@ -119,16 +106,15 @@ export default class ClearpayPaymentStrategy implements PaymentStrategy {
             paymentData: { nonce: config.payment.token },
         };
 
-        await this._store.dispatch(this._orderActionCreator.submitOrder({}, options));
+        await this._paymentIntegrationService.submitOrder({}, options);
 
         try {
-            return await this._store.dispatch(
-                this._paymentActionCreator.submitPayment(paymentPayload),
-            );
+            await this._paymentIntegrationService.submitPayment(paymentPayload);
         } catch (error) {
-            await this._remoteCheckoutRequestSender.forgetCheckout();
-            await this._store.dispatch(this._paymentMethodActionCreator.loadPaymentMethods());
+            await this._paymentIntegrationService.forgetCheckout(payment.providerId, options);
+            await this._paymentIntegrationService.loadPaymentMethods();
 
+            // ferfcer/eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
             throw new OrderFinalizationNotCompletedError(error.body?.errors?.[0]?.message);
         }
     }
@@ -150,14 +136,12 @@ export default class ClearpayPaymentStrategy implements PaymentStrategy {
         gatewayId: string,
         methodId: string,
         options?: RequestOptions,
-    ): Promise<InternalCheckoutSelectors> {
+    ): Promise<PaymentIntegrationSelectors> {
         try {
-            return await this._store.dispatch(
-                this._paymentMethodActionCreator.loadPaymentMethod(gatewayId, {
+            return await this._paymentIntegrationService.loadPaymentMethod(gatewayId, {
                     ...options,
                     params: { ...options?.params, method: methodId },
-                }),
-            );
+                });
         } catch (error) {
             if (error instanceof RequestError && error.body?.status === 422) {
                 throw new InvalidArgumentError(

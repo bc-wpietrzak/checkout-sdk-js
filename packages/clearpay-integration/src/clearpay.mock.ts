@@ -1,4 +1,4 @@
-import { BillingAddress } from '../../../billing/';
+import { BillingAddress, PaymentMethod } from '@bigcommerce/checkout-sdk/payment-integration-api';
 
 export function getBillingAddress(): BillingAddress {
     return {
@@ -17,5 +17,22 @@ export function getBillingAddress(): BillingAddress {
         postalCode: '95555',
         phone: '555-555-5555',
         customFields: [],
+    };
+}
+
+export function getClearpay(): PaymentMethod {
+    return {
+        id: 'PAY_BY_INSTALLMENT',
+        gateway: 'clearpay',
+        logoUrl: '',
+        method: 'multi-option',
+        supportedCards: [],
+        config: {
+            displayName: 'Pay over time',
+            merchantId: '33133',
+            testMode: false,
+        },
+        type: 'PAYMENT_TYPE_API',
+        clientToken: 'foo',
     };
 }

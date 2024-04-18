@@ -22,7 +22,6 @@ import {
     CheckoutcomAPMPaymentStrategy,
     CheckoutcomSEPAPaymentStrategy,
 } from './strategies/checkoutcom-custom';
-import { ClearpayPaymentStrategy } from './strategies/clearpay';
 import { ConvergePaymentStrategy } from './strategies/converge';
 import { CreditCardRedirectPaymentStrategy } from './strategies/credit-card-redirect';
 import { CyberSourcePaymentStrategy } from './strategies/cybersource';
@@ -126,12 +125,6 @@ describe('CreatePaymentStrategyRegistry', () => {
         const paymentStrategy = registry.get(PaymentStrategyType.CHECKOUTCOM_SEPA);
 
         expect(paymentStrategy).toBeInstanceOf(CheckoutcomSEPAPaymentStrategy);
-    });
-
-    it('can instantiate clearpay', () => {
-        const paymentStrategy = registry.get(PaymentStrategyType.CLEARPAY);
-
-        expect(paymentStrategy).toBeInstanceOf(ClearpayPaymentStrategy);
     });
 
     it('can instantiate converge', () => {

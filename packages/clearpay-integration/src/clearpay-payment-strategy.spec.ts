@@ -1,14 +1,9 @@
-import { createClient as createPaymentClient } from '@bigcommerce/bigpay-client';
 import { Action, createAction, createErrorAction } from '@bigcommerce/data-store';
-import { createRequestSender } from '@bigcommerce/request-sender';
 import { createScriptLoader } from '@bigcommerce/script-loader';
 import { merge, noop } from 'lodash';
 import { Observable, of } from 'rxjs';
 
 import {
-    CheckoutRequestSender,
-    CheckoutStore,
-    CheckoutValidator,
     createCheckoutStore,
 } from '../../../checkout';
 import {
@@ -16,59 +11,42 @@ import {
     getCheckoutPayment,
     getCheckoutStoreState,
 } from '../../../checkout/checkouts.mock';
+import { getErrorResponse } from '../../../common/http-request/responses.mock';
+import {
+    StoreCreditActionType,
+} from '../../../store-credit';
+import { PaymentMethodActionType } from '../../payment-method-actions';
+
+import ClearpayPaymentStrategy from './clearpay-payment-strategy';
+import ClearpayScriptLoader from './clearpay-script-loader';
+import { getBillingAddress, getClearpay } from './clearpay.mock';
+import {
+    getErrorPaymentResponseBody,
+    getOrderRequestBody,
+    getResponse,
+    PaymentIntegrationServiceMock,
+} from '@bigcommerce/checkout-sdk/payment-integrations-test-utils';
 import {
     InvalidArgumentError,
     MissingDataError,
     NotInitializedError,
-    RequestError,
-} from '../../../common/error/errors';
-import { getErrorResponse, getResponse } from '../../../common/http-request/responses.mock';
-import {
-    OrderActionCreator,
     OrderActionType,
+    OrderFinalizationNotCompletedError,
     OrderRequestBody,
-    OrderRequestSender,
-} from '../../../order';
-import { OrderFinalizationNotCompletedError } from '../../../order/errors';
-import { getOrderRequestBody } from '../../../order/internal-orders.mock';
-import { RemoteCheckoutRequestSender } from '../../../remote-checkout';
-import { createSpamProtection, PaymentHumanVerificationHandler } from '../../../spam-protection';
-import {
-    StoreCreditActionCreator,
-    StoreCreditActionType,
-    StoreCreditRequestSender,
-} from '../../../store-credit';
-import PaymentActionCreator from '../../payment-action-creator';
-import { PaymentActionType } from '../../payment-actions';
-import PaymentMethod from '../../payment-method';
-import PaymentMethodActionCreator from '../../payment-method-action-creator';
-import { PaymentMethodActionType } from '../../payment-method-actions';
-import PaymentMethodRequestSender from '../../payment-method-request-sender';
-import { getClearpay } from '../../payment-methods.mock';
-import PaymentRequestSender from '../../payment-request-sender';
-import PaymentRequestTransformer from '../../payment-request-transformer';
-import { getErrorPaymentResponseBody } from '../../payments.mock';
-
-import ClearpayPaymentStrategy from './clearpay-payment-strategy';
-import ClearpayScriptLoader from './clearpay-script-loader';
-import { getBillingAddress } from './clearpay.mock';
+    PaymentActionType,
+    PaymentIntegrationService,
+    PaymentMethod,
+    RequestError,
+} from '@bigcommerce/checkout-sdk/payment-integration-api';
 
 describe('ClearpayPaymentStrategy', () => {
-    let checkoutValidator: CheckoutValidator;
-    let checkoutRequestSender: CheckoutRequestSender;
     let loadPaymentMethodAction: Observable<Action>;
-    let orderActionCreator: OrderActionCreator;
-    let orderRequestSender: OrderRequestSender;
     let payload: OrderRequestBody;
-    let paymentActionCreator: PaymentActionCreator;
+    let paymentIntegrationService: PaymentIntegrationService;
     let paymentMethod: PaymentMethod;
-    let paymentMethodActionCreator: PaymentMethodActionCreator;
-    let remoteCheckoutRequestSender: RemoteCheckoutRequestSender;
-    let storeCreditActionCreator: StoreCreditActionCreator;
     let scriptLoader: ClearpayScriptLoader;
     let submitOrderAction: Observable<Action>;
     let submitPaymentAction: Observable<Action>;
-    let store: CheckoutStore;
     let strategy: ClearpayPaymentStrategy;
 
     const clearpaySdk = {
@@ -77,36 +55,14 @@ describe('ClearpayPaymentStrategy', () => {
     };
 
     beforeEach(() => {
-        orderRequestSender = new OrderRequestSender(createRequestSender());
         store = createCheckoutStore({
             ...getCheckoutStoreState(),
             billingAddress: { data: getBillingAddress(), errors: {}, statuses: {} },
         });
-        paymentMethodActionCreator = new PaymentMethodActionCreator(
-            new PaymentMethodRequestSender(createRequestSender()),
-        );
-        checkoutRequestSender = new CheckoutRequestSender(createRequestSender());
-        checkoutValidator = new CheckoutValidator(checkoutRequestSender);
-        orderActionCreator = new OrderActionCreator(orderRequestSender, checkoutValidator);
-        remoteCheckoutRequestSender = new RemoteCheckoutRequestSender(createRequestSender());
-        paymentActionCreator = new PaymentActionCreator(
-            new PaymentRequestSender(createPaymentClient()),
-            orderActionCreator,
-            new PaymentRequestTransformer(),
-            new PaymentHumanVerificationHandler(createSpamProtection(createScriptLoader())),
-        );
-        storeCreditActionCreator = new StoreCreditActionCreator(
-            new StoreCreditRequestSender(createRequestSender()),
-        );
+        paymentIntegrationService = new PaymentIntegrationServiceMock();
         scriptLoader = new ClearpayScriptLoader(createScriptLoader());
         strategy = new ClearpayPaymentStrategy(
-            store,
-            checkoutValidator,
-            orderActionCreator,
-            paymentActionCreator,
-            paymentMethodActionCreator,
-            remoteCheckoutRequestSender,
-            storeCreditActionCreator,
+            paymentIntegrationService,
             scriptLoader,
         );
 
@@ -137,23 +93,21 @@ describe('ClearpayPaymentStrategy', () => {
             },
         });
 
-        jest.spyOn(store, 'dispatch');
-
-        jest.spyOn(checkoutValidator, 'validate').mockReturnValue(
+        jest.spyOn(paymentIntegrationService, 'validateCheckout').mockReturnValue(
             new Promise<void>((resolve) => resolve()),
         );
 
-        jest.spyOn(orderActionCreator, 'submitOrder').mockReturnValue(submitOrderAction);
+        jest.spyOn(paymentIntegrationService, 'submitOrder').mockReturnValue(submitOrderAction);
 
-        jest.spyOn(paymentMethodActionCreator, 'loadPaymentMethod').mockReturnValue(
+        jest.spyOn(paymentIntegrationService, 'loadPaymentMethod').mockReturnValue(
             loadPaymentMethodAction,
         );
 
-        jest.spyOn(storeCreditActionCreator, 'applyStoreCredit').mockReturnValue(
+        jest.spyOn(paymentIntegrationService, 'applyStoreCredit').mockReturnValue(
             of(createAction(StoreCreditActionType.ApplyStoreCreditSucceeded)),
         );
 
-        jest.spyOn(paymentActionCreator, 'submitPayment').mockReturnValue(submitPaymentAction);
+        jest.spyOn(paymentIntegrationService, 'submitPayment').mockReturnValue(submitPaymentAction);
 
         jest.spyOn(scriptLoader, 'load').mockReturnValue(Promise.resolve(clearpaySdk));
 
@@ -193,15 +147,15 @@ describe('ClearpayPaymentStrategy', () => {
         });
 
         it('applies store credit usage', () => {
-            expect(storeCreditActionCreator.applyStoreCredit).toHaveBeenCalledWith(false);
+            expect(paymentIntegrationService.applyStoreCredit).toHaveBeenCalledWith(false);
         });
 
         it('validates nothing has changed before redirecting to Clearpay checkout page', () => {
-            expect(checkoutValidator.validate).toHaveBeenCalled();
+            expect(paymentIntegrationService.validateCheckout).toHaveBeenCalled();
         });
 
         it('rejects with error if execution is unsuccessful', async () => {
-            jest.spyOn(storeCreditActionCreator, 'applyStoreCredit').mockReturnValue(
+            jest.spyOn(paymentIntegrationService, 'applyStoreCredit').mockReturnValue(
                 of(createErrorAction(StoreCreditActionType.ApplyStoreCreditFailed, new Error())),
             );
 
@@ -231,31 +185,26 @@ describe('ClearpayPaymentStrategy', () => {
                 },
             });
 
-            jest.spyOn(paymentMethodActionCreator, 'loadPaymentMethod').mockImplementation(() => {
+            jest.spyOn(paymentIntegrationService, 'loadPaymentMethod').mockImplementation(() => {
                 throw new RequestError(errorResponse);
             });
-
-            expect(store.dispatch).toHaveBeenCalledWith(loadPaymentMethodAction);
 
             await expect(strategy.execute(payload)).rejects.toThrow(InvalidArgumentError);
         });
 
         it('throws RequestError if loadPaymentMethod fails', async () => {
-            jest.spyOn(paymentMethodActionCreator, 'loadPaymentMethod').mockImplementation(() => {
+            jest.spyOn(paymentIntegrationService, 'loadPaymentMethod').mockImplementation(() => {
                 throw new RequestError(getErrorResponse());
             });
-
-            expect(store.dispatch).toHaveBeenCalledWith(loadPaymentMethodAction);
 
             await expect(strategy.execute(payload)).rejects.toThrow(RequestError);
         });
 
         it('loads payment client token', () => {
-            expect(paymentMethodActionCreator.loadPaymentMethod).toHaveBeenCalledWith(
+            expect(paymentIntegrationService.loadPaymentMethod).toHaveBeenCalledWith(
                 paymentMethod.gateway,
                 { params: { method: paymentMethod.id } },
             );
-            expect(store.dispatch).toHaveBeenCalledWith(loadPaymentMethodAction);
         });
 
         it("throws error if GB isn't the courtryCode in the billing address", async () => {
@@ -270,13 +219,7 @@ describe('ClearpayPaymentStrategy', () => {
                 },
             });
             strategy = new ClearpayPaymentStrategy(
-                store,
-                checkoutValidator,
-                orderActionCreator,
-                paymentActionCreator,
-                paymentMethodActionCreator,
-                remoteCheckoutRequestSender,
-                storeCreditActionCreator,
+                paymentIntegrationService,
                 scriptLoader,
             );
 
@@ -312,17 +255,9 @@ describe('ClearpayPaymentStrategy', () => {
             );
 
             strategy = new ClearpayPaymentStrategy(
-                store,
-                checkoutValidator,
-                orderActionCreator,
-                paymentActionCreator,
-                paymentMethodActionCreator,
-                remoteCheckoutRequestSender,
-                storeCreditActionCreator,
+                paymentIntegrationService,
                 scriptLoader,
             );
-
-            jest.spyOn(store, 'dispatch');
         });
 
         it('submits the order and the payment', async () => {
@@ -335,34 +270,25 @@ describe('ClearpayPaymentStrategy', () => {
                 gatewayId: paymentMethod.gateway,
             });
 
-            expect(store.dispatch).toHaveBeenCalledWith(submitOrderAction);
-            expect(store.dispatch).toHaveBeenCalledWith(submitPaymentAction);
-
-            expect(orderActionCreator.submitOrder).toHaveBeenCalledWith(
+            expect(paymentIntegrationService.submitOrder).toHaveBeenCalledWith(
                 {},
                 { methodId: paymentMethod.id, gatewayId: paymentMethod.gateway },
             );
 
-            expect(paymentActionCreator.submitPayment).toHaveBeenCalledWith({
+            expect(paymentIntegrationService.submitPayment).toHaveBeenCalledWith({
                 methodId: paymentMethod.id,
                 paymentData: { nonce },
             });
 
-            jest.spyOn(remoteCheckoutRequestSender, 'forgetCheckout');
+            jest.spyOn(paymentIntegrationService, 'forgetCheckout');
 
-            expect(remoteCheckoutRequestSender.forgetCheckout).not.toHaveBeenCalled();
+            expect(paymentIntegrationService.forgetCheckout).not.toHaveBeenCalled();
         });
 
         it('throws error if unable to finalize order due to missing data', async () => {
             store = createCheckoutStore(getCheckoutStoreState());
             strategy = new ClearpayPaymentStrategy(
-                store,
-                checkoutValidator,
-                orderActionCreator,
-                paymentActionCreator,
-                paymentMethodActionCreator,
-                remoteCheckoutRequestSender,
-                storeCreditActionCreator,
+                paymentIntegrationService,
                 scriptLoader,
             );
 
@@ -377,13 +303,13 @@ describe('ClearpayPaymentStrategy', () => {
                 createErrorAction(PaymentActionType.SubmitPaymentFailed, response),
             );
 
-            jest.spyOn(paymentActionCreator, 'submitPayment').mockReturnValue(
+            jest.spyOn(paymentIntegrationService, 'submitPayment').mockReturnValue(
                 paymentFailedErrorAction,
             );
-            jest.spyOn(remoteCheckoutRequestSender, 'forgetCheckout').mockReturnValue(
+            jest.spyOn(paymentIntegrationService, 'forgetCheckout').mockReturnValue(
                 Promise.resolve(),
             );
-            jest.spyOn(paymentMethodActionCreator, 'loadPaymentMethods').mockReturnValue(
+            jest.spyOn(paymentIntegrationService, 'loadPaymentMethods').mockReturnValue(
                 of(
                     createAction(PaymentMethodActionType.LoadPaymentMethodsSucceeded, [
                         getClearpay(),
@@ -400,11 +326,8 @@ describe('ClearpayPaymentStrategy', () => {
                 strategy.finalize({ methodId: paymentMethod.id, gatewayId: paymentMethod.gateway }),
             ).rejects.toThrow(OrderFinalizationNotCompletedError);
 
-            expect(store.dispatch).toHaveBeenCalledWith(submitOrderAction);
-            expect(store.dispatch).toHaveBeenCalledWith(paymentFailedErrorAction);
-
-            expect(remoteCheckoutRequestSender.forgetCheckout).toHaveBeenCalled();
-            expect(paymentMethodActionCreator.loadPaymentMethods).toHaveBeenCalled();
+            expect(paymentIntegrationService.forgetCheckout).toHaveBeenCalled();
+            expect(paymentIntegrationService.loadPaymentMethods).toHaveBeenCalled();
         });
     });
 });
