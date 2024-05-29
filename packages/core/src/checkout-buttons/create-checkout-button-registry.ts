@@ -4,6 +4,7 @@ import { getScriptLoader } from '@bigcommerce/script-loader';
 
 import { createAmazonPayV2PaymentProcessor } from '@bigcommerce/checkout-sdk/amazon-pay-utils';
 import { BraintreeScriptLoader } from '@bigcommerce/checkout-sdk/braintree-utils';
+import { MasterpassScriptLoader } from '@bigcommerce/checkout-sdk/masterpass-integration';
 
 import { CartRequestSender } from '../cart';
 import { CheckoutActionCreator, CheckoutRequestSender, CheckoutStore } from '../checkout';
@@ -12,7 +13,6 @@ import { ConfigActionCreator, ConfigRequestSender } from '../config';
 import { FormFieldsActionCreator, FormFieldsRequestSender } from '../form';
 import { PaymentMethodActionCreator, PaymentMethodRequestSender } from '../payment';
 import { BraintreeSDKCreator } from '../payment/strategies/braintree';
-import { MasterpassScriptLoader } from '../payment/strategies/masterpass';
 import { PaypalScriptLoader } from '../payment/strategies/paypal';
 
 import { CheckoutButtonMethodType, CheckoutButtonStrategy } from './strategies';

@@ -83,7 +83,6 @@ import {
     GooglePayStripeUPEInitializer,
     GooglePayWorldpayAccessInitializer,
 } from './strategies/googlepay';
-import { MasterpassPaymentStrategy, MasterpassScriptLoader } from './strategies/masterpass';
 import { MonerisPaymentStrategy } from './strategies/moneris';
 import { OpyPaymentStrategy, OpyScriptLoader } from './strategies/opy';
 import { PaypalExpressPaymentStrategy, PaypalScriptLoader } from './strategies/paypal';
@@ -417,18 +416,6 @@ export default function createPaymentStrategyRegistry(
                 storeCreditActionCreator,
                 new DigitalRiverScriptLoader(scriptLoader, getStylesheetLoader()),
                 billingAddressActionCreator,
-            ),
-    );
-
-    registry.register(
-        PaymentStrategyType.MASTERPASS,
-        () =>
-            new MasterpassPaymentStrategy(
-                store,
-                orderActionCreator,
-                paymentActionCreator,
-                new MasterpassScriptLoader(scriptLoader),
-                locale,
             ),
     );
 

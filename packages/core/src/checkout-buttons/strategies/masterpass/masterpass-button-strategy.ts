@@ -1,3 +1,11 @@
+import {
+    formatLocale,
+    getCallbackUrl,
+    Masterpass,
+    MasterpassCheckoutOptions,
+    MasterpassScriptLoader,
+} from '@bigcommerce/checkout-sdk/masterpass-integration';
+
 import { CheckoutActionCreator, CheckoutStore } from '../../../checkout';
 import {
     InvalidArgumentError,
@@ -7,13 +15,6 @@ import {
     NotInitializedErrorType,
 } from '../../../common/error/errors';
 import { bindDecorator as bind } from '../../../common/utility';
-import {
-    formatLocale,
-    getCallbackUrl,
-    Masterpass,
-    MasterpassCheckoutOptions,
-    MasterpassScriptLoader,
-} from '../../../payment/strategies/masterpass';
 import { CheckoutButtonInitializeOptions } from '../../checkout-button-options';
 import CheckoutButtonStrategy from '../checkout-button-strategy';
 

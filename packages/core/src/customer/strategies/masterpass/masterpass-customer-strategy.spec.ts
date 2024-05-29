@@ -1,6 +1,12 @@
 import { createRequestSender, RequestSender } from '@bigcommerce/request-sender';
 import { createScriptLoader } from '@bigcommerce/script-loader';
 
+import {
+    getMasterpassScriptMock,
+    Masterpass,
+    MasterpassScriptLoader,
+} from '@bigcommerce/checkout-sdk/masterpass-integration';
+
 import { getCartState } from '../../../cart/carts.mock';
 import {
     CheckoutActionCreator,
@@ -19,8 +25,6 @@ import {
     PaymentMethodRequestSender,
 } from '../../../payment';
 import { getMasterpass, getPaymentMethodsState } from '../../../payment/payment-methods.mock';
-import { Masterpass, MasterpassScriptLoader } from '../../../payment/strategies/masterpass';
-import { getMasterpassScriptMock } from '../../../payment/strategies/masterpass/masterpass.mock';
 import { RemoteCheckoutActionCreator, RemoteCheckoutRequestSender } from '../../../remote-checkout';
 import { CustomerInitializeOptions } from '../../customer-request-options';
 import { getCustomerState } from '../../customers.mock';

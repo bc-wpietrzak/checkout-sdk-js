@@ -1,6 +1,6 @@
 import { ScriptLoader } from '@bigcommerce/script-loader';
 
-import { PaymentMethodClientUnavailableError } from '../../errors';
+import { PaymentMethodClientUnavailableError } from '@bigcommerce/checkout-sdk/payment-integration-api';
 
 import { Masterpass, MasterpassHostWindow } from './masterpass';
 

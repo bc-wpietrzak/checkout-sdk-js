@@ -1,6 +1,12 @@
 import { createRequestSender, RequestSender } from '@bigcommerce/request-sender';
 import { createScriptLoader } from '@bigcommerce/script-loader';
 
+import {
+    getMasterpassScriptMock,
+    Masterpass,
+    MasterpassScriptLoader,
+} from '@bigcommerce/checkout-sdk/masterpass-integration';
+
 import { CheckoutButtonInitializeOptions } from '../..';
 import { getCartState } from '../../../cart/carts.mock';
 import {
@@ -17,8 +23,6 @@ import { getConfig } from '../../../config/configs.mock';
 import { FormFieldsActionCreator, FormFieldsRequestSender } from '../../../form';
 import { PaymentMethod } from '../../../payment';
 import { getMasterpass, getPaymentMethodsState } from '../../../payment/payment-methods.mock';
-import { Masterpass, MasterpassScriptLoader } from '../../../payment/strategies/masterpass';
-import { getMasterpassScriptMock } from '../../../payment/strategies/masterpass/masterpass.mock';
 import CheckoutButtonMethodType from '../checkout-button-method-type';
 import CheckoutButtonStrategy from '../checkout-button-strategy';
 

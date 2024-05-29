@@ -23,7 +23,6 @@ import { CyberSourcePaymentStrategy } from './strategies/cybersource';
 import { CyberSourceV2PaymentStrategy } from './strategies/cybersourcev2';
 import { DigitalRiverPaymentStrategy } from './strategies/digitalriver';
 import { GooglePayPaymentStrategy } from './strategies/googlepay';
-import { MasterpassPaymentStrategy } from './strategies/masterpass';
 import { OpyPaymentStrategy } from './strategies/opy';
 import { PaypalExpressPaymentStrategy } from './strategies/paypal';
 import { PPSDKStrategy } from './strategies/ppsdk';
@@ -196,12 +195,6 @@ describe('CreatePaymentStrategyRegistry', () => {
         const paymentStrategy = registry.get(PaymentStrategyType.WE_PAY);
 
         expect(paymentStrategy).toBeInstanceOf(WepayPaymentStrategy);
-    });
-
-    it('can instantiate masterpass', () => {
-        const paymentStrategy = registry.get(PaymentStrategyType.MASTERPASS);
-
-        expect(paymentStrategy).toBeInstanceOf(MasterpassPaymentStrategy);
     });
 
     it('can instantiate ppsdk', () => {

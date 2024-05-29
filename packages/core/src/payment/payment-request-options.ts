@@ -1,4 +1,5 @@
 import { CreditCardPaymentInitializeOptions } from '@bigcommerce/checkout-sdk/credit-card-integration';
+import { MasterpassPaymentInitializeOptions } from '@bigcommerce/checkout-sdk/masterpass-integration';
 
 import { RequestOptions } from '../common/http-request';
 
@@ -11,7 +12,6 @@ import {
 import { ChasePayInitializeOptions } from './strategies/chasepay';
 import { DigitalRiverPaymentInitializeOptions } from './strategies/digitalriver';
 import { GooglePayPaymentInitializeOptions } from './strategies/googlepay';
-import { MasterpassPaymentInitializeOptions } from './strategies/masterpass';
 import { MonerisPaymentInitializeOptions } from './strategies/moneris';
 import { OpyPaymentInitializeOptions } from './strategies/opy';
 import { PaypalExpressPaymentInitializeOptions } from './strategies/paypal';

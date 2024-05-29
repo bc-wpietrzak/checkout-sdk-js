@@ -23,3 +23,11 @@ export default interface MasterpassPaymentInitializeOptions {
      */
     walletButton?: string;
 }
+
+export interface WithMasterpassPaymentInitializeOptions {
+    /**
+     * The options that are required to initialize the Mollie payment
+     * method. They can be omitted unless you need to support Mollie.
+     */
+    masterpass?: MasterpassPaymentInitializeOptions;
+}

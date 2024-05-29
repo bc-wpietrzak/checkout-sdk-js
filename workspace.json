@@ -21,6 +21,7 @@
         "humm-integration": "packages/humm-integration",
         "klarna-integration": "packages/klarna-integration",
         "legacy-integration": "packages/legacy-integration",
+        "masterpass-integration": "packages/masterpass-integration",
         "mollie-integration": "packages/mollie-integration",
         "no-payment-integration": "packages/no-payment-integration",
         "offline-integration": "packages/offline-integration",

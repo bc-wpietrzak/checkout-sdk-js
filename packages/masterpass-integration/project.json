@@ -1,0 +1,23 @@
+{
+    "root": "packages/masterpass-integration",
+    "sourceRoot": "packages/masterpass-integration/src",
+    "projectType": "library",
+    "targets": {
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": ["packages/masterpass-integration/**/*.ts"]
+            }
+        },
+        "test": {
+            "executor": "@nrwl/jest:jest",
+            "outputs": ["coverage/packages/masterpass-integration"],
+            "options": {
+                "jestConfig": "packages/masterpass-integration/jest.config.js",
+                "passWithNoTests": true
+            }
+        }
+    },
+    "tags": ["scope:shared"]
+}

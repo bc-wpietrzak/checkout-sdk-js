@@ -1,3 +1,9 @@
+import {
+    formatLocale,
+    getCallbackUrl,
+    MasterpassScriptLoader,
+} from '@bigcommerce/checkout-sdk/masterpass-integration';
+
 import { CheckoutStore, InternalCheckoutSelectors } from '../../../checkout';
 import {
     InvalidArgumentError,
@@ -6,11 +12,6 @@ import {
     NotImplementedError,
 } from '../../../common/error/errors';
 import { PaymentMethod, PaymentMethodActionCreator } from '../../../payment';
-import {
-    formatLocale,
-    getCallbackUrl,
-    MasterpassScriptLoader,
-} from '../../../payment/strategies/masterpass';
 import { RemoteCheckoutActionCreator } from '../../../remote-checkout';
 import {
     CustomerInitializeOptions,

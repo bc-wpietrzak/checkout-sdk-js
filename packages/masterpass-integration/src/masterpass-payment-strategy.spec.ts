@@ -1,49 +1,26 @@
-import { createClient as createPaymentClient } from '@bigcommerce/bigpay-client';
 import { Action, createAction } from '@bigcommerce/data-store';
-import { createRequestSender } from '@bigcommerce/request-sender';
 import { createScriptLoader } from '@bigcommerce/script-loader';
 import { Observable, of } from 'rxjs';
 
-import { getCartState } from '../../../cart/carts.mock';
 import {
-    CheckoutRequestSender,
-    CheckoutStore,
-    CheckoutValidator,
-    createCheckoutStore,
-} from '../../../checkout';
-import { getCheckoutState } from '../../../checkout/checkouts.mock';
-import { getConfigState } from '../../../config/configs.mock';
-import { getCustomerState } from '../../../customer/customers.mock';
-import { getFormFieldsState } from '../../../form/form.mock';
-import {
-    OrderActionCreator,
     OrderActionType,
+    OrderFinalizationNotRequiredError,
     OrderRequestBody,
-    OrderRequestSender,
-} from '../../../order';
-import { OrderFinalizationNotRequiredError } from '../../../order/errors';
-import {
-    PaymentActionCreator,
+    PaymentActionType,
     PaymentInitializeOptions,
+    PaymentIntegrationService,
     PaymentMethod,
-    PaymentRequestSender,
-} from '../../../payment';
-import { createSpamProtection, PaymentHumanVerificationHandler } from '../../../spam-protection';
-import { PaymentActionType } from '../../payment-actions';
-import { getMasterpass, getPaymentMethodsState } from '../../payment-methods.mock';
-import PaymentRequestTransformer from '../../payment-request-transformer';
+} from '@bigcommerce/checkout-sdk/payment-integration-api';
+import { PaymentIntegrationServiceMock } from '@bigcommerce/checkout-sdk/payment-integrations-test-utils';
 
 import { Masterpass } from './masterpass';
-import { getCallbackUrlMock, getMasterpassScriptMock } from './masterpass.mock';
+import { getCallbackUrlMock, getMasterpass, getMasterpassScriptMock } from './masterpass.mock';
 
 import { MasterpassCheckoutOptions, MasterpassPaymentStrategy, MasterpassScriptLoader } from './';
 
 describe('MasterpassPaymentStrategy', () => {
     let strategy: MasterpassPaymentStrategy;
-    let orderRequestSender: OrderRequestSender;
-    let store: CheckoutStore;
-    let orderActionCreator: OrderActionCreator;
-    let paymentActionCreator: PaymentActionCreator;
+    let paymentIntegrationService: PaymentIntegrationService;
     let scriptLoader: MasterpassScriptLoader;
     let initOptions: PaymentInitializeOptions;
     let paymentMethodMock: PaymentMethod;
@@ -57,38 +34,12 @@ describe('MasterpassPaymentStrategy', () => {
             },
         };
 
-        orderRequestSender = new OrderRequestSender(createRequestSender());
-
-        store = createCheckoutStore({
-            checkout: getCheckoutState(),
-            config: getConfigState(),
-            customer: getCustomerState(),
-            cart: getCartState(),
-            formFields: getFormFieldsState(),
-            paymentMethods: getPaymentMethodsState(),
-        });
-
-        jest.spyOn(store, 'dispatch').mockReturnValue(Promise.resolve(store.getState()));
+        paymentIntegrationService = new PaymentIntegrationServiceMock();
 
         paymentMethodMock = getMasterpass();
 
-        jest.spyOn(store.getState().paymentMethods, 'getPaymentMethod').mockReturnValue(
+        jest.spyOn(paymentIntegrationService.getState(), 'getPaymentMethod').mockReturnValue(
             paymentMethodMock,
-        );
-
-        const checkoutValidator = new CheckoutValidator(
-            new CheckoutRequestSender(createRequestSender()),
-        );
-
-        orderActionCreator = new OrderActionCreator(orderRequestSender, checkoutValidator);
-
-        const paymentRequestSender = new PaymentRequestSender(createPaymentClient());
-
-        paymentActionCreator = new PaymentActionCreator(
-            paymentRequestSender,
-            orderActionCreator,
-            new PaymentRequestTransformer(),
-            new PaymentHumanVerificationHandler(createSpamProtection(createScriptLoader())),
         );
 
         scriptLoader = new MasterpassScriptLoader(createScriptLoader());
@@ -98,9 +49,7 @@ describe('MasterpassPaymentStrategy', () => {
 
         // Strategy
         strategy = new MasterpassPaymentStrategy(
-            store,
-            orderActionCreator,
-            paymentActionCreator,
+            paymentIntegrationService,
             scriptLoader,
             'en-US',
         );
@@ -108,7 +57,7 @@ describe('MasterpassPaymentStrategy', () => {
 
     describe('#initialize()', () => {
         it('throws an exception if payment method cannot be found', () => {
-            jest.spyOn(store.getState().paymentMethods, 'getPaymentMethod').mockReturnValue(
+            jest.spyOn(paymentIntegrationService.getState(), 'getPaymentMethod').mockReturnValue(
                 undefined,
             );
 
@@ -133,9 +82,7 @@ describe('MasterpassPaymentStrategy', () => {
         it('loads masterpass script with correct locale', async () => {
             // Strategy
             strategy = new MasterpassPaymentStrategy(
-                store,
-                orderActionCreator,
-                paymentActionCreator,
+                paymentIntegrationService,
                 scriptLoader,
                 'FR',
             );
@@ -157,9 +104,7 @@ describe('MasterpassPaymentStrategy', () => {
         it('loads masterpass script with default locale for unsupported country code', async () => {
             // Strategy
             strategy = new MasterpassPaymentStrategy(
-                store,
-                orderActionCreator,
-                paymentActionCreator,
+                paymentIntegrationService,
                 scriptLoader,
                 'es_fr',
             );
@@ -181,9 +126,7 @@ describe('MasterpassPaymentStrategy', () => {
         it('loads masterpass script with default locale for unsupported language', async () => {
             // Strategy
             strategy = new MasterpassPaymentStrategy(
-                store,
-                orderActionCreator,
-                paymentActionCreator,
+                paymentIntegrationService,
                 scriptLoader,
                 'tr',
             );
@@ -205,9 +148,7 @@ describe('MasterpassPaymentStrategy', () => {
         it('loads masterpass script with correct locale for supported language and country', async () => {
             // Strategy
             strategy = new MasterpassPaymentStrategy(
-                store,
-                orderActionCreator,
-                paymentActionCreator,
+                paymentIntegrationService,
                 scriptLoader,
                 'zh_hk',
             );
@@ -362,10 +303,10 @@ describe('MasterpassPaymentStrategy', () => {
             };
 
             submitOrderAction = of(createAction(OrderActionType.SubmitOrderRequested));
-            orderActionCreator.submitOrder = jest.fn(() => submitOrderAction);
+            jest.spyOn(paymentIntegrationService, 'submitOrder').mockReturnValue(submitOrderAction);
 
             submitPaymentAction = of(createAction(PaymentActionType.SubmitPaymentRequested));
-            paymentActionCreator.submitPayment = jest.fn(() => submitPaymentAction);
+            jest.spyOn(paymentIntegrationService, 'submitPayment').mockReturnValue(submitPaymentAction);
         });
 
         it('fails to submit order when payment is not provided', () => {
@@ -418,9 +359,8 @@ describe('MasterpassPaymentStrategy', () => {
             };
             const order = { useStoreCredit: payload.useStoreCredit };
 
-            expect(orderActionCreator.submitOrder).toHaveBeenCalledWith(order, undefined);
-            expect(paymentActionCreator.submitPayment).toHaveBeenCalledWith(submitPaymentArgs);
-            expect(store.dispatch).toHaveBeenCalledWith(submitOrderAction);
+            expect(paymentIntegrationService.submitOrder).toHaveBeenCalledWith(order, undefined);
+            expect(paymentIntegrationService.submitPayment).toHaveBeenCalledWith(submitPaymentArgs);
         });
     });
 
@@ -439,7 +379,7 @@ describe('MasterpassPaymentStrategy', () => {
 
             const submitOrderAction = of(createAction(OrderActionType.SubmitOrderRequested));
 
-            orderActionCreator.submitOrder = jest.fn(() => submitOrderAction);
+            jest.spyOn(paymentIntegrationService, 'submitOrder').mockReturnValue(submitOrderAction);
         });
 
         it('remove event listeners on wallet button', async () => {

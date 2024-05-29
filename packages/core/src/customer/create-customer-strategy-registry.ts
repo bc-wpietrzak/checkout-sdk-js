@@ -3,6 +3,7 @@ import { RequestSender } from '@bigcommerce/request-sender';
 import { getScriptLoader } from '@bigcommerce/script-loader';
 
 import { createAmazonPayV2PaymentProcessor } from '@bigcommerce/checkout-sdk/amazon-pay-utils';
+import { MasterpassScriptLoader } from '@bigcommerce/checkout-sdk/masterpass-integration';
 
 import { CheckoutActionCreator, CheckoutRequestSender, CheckoutStore } from '../checkout';
 import { Registry } from '../common/registry';
@@ -26,7 +27,6 @@ import {
     GooglePayStripeUPEInitializer,
     GooglePayWorldpayAccessInitializer,
 } from '../payment/strategies/googlepay';
-import { MasterpassScriptLoader } from '../payment/strategies/masterpass';
 import { RemoteCheckoutActionCreator, RemoteCheckoutRequestSender } from '../remote-checkout';
 import {
     createSpamProtection,

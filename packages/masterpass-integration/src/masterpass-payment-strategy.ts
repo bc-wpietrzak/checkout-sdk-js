@@ -1,20 +1,20 @@
-import { CheckoutStore, InternalCheckoutSelectors } from '../../../checkout';
 import {
     InvalidArgumentError,
     MissingDataError,
     MissingDataErrorType,
-} from '../../../common/error/errors';
-import { bindDecorator as bind } from '../../../common/utility';
-import { OrderActionCreator, OrderRequestBody } from '../../../order';
-import { OrderFinalizationNotRequiredError } from '../../../order/errors';
-import PaymentActionCreator from '../../payment-action-creator';
-import PaymentMethod from '../../payment-method';
-import { PaymentInitializeOptions, PaymentRequestOptions } from '../../payment-request-options';
-import PaymentStrategy from '../payment-strategy';
+    OrderFinalizationNotRequiredError,
+    OrderRequestBody,
+    PaymentInitializeOptions,
+    PaymentIntegrationService,
+    PaymentMethod,
+    PaymentRequestOptions,
+    PaymentStrategy,
+} from '@bigcommerce/checkout-sdk/payment-integration-api';
 
 import formatLocale from './format-locale';
 import getCallbackUrl from './get-callback-url';
 import { Masterpass, MasterpassCheckoutOptions } from './masterpass';
+import { WithMasterpassPaymentInitializeOptions } from './masterpass-payment-initialize-options';
 import MasterpassScriptLoader from './masterpass-script-loader';
 
 export default class MasterpassPaymentStrategy implements PaymentStrategy {
@@ -23,17 +23,17 @@ export default class MasterpassPaymentStrategy implements PaymentStrategy {
     private _walletButton?: HTMLElement;
 
     constructor(
-        private _store: CheckoutStore,
-        private _orderActionCreator: OrderActionCreator,
-        private _paymentActionCreator: PaymentActionCreator,
+        private _paymentIntegrationService: PaymentIntegrationService,
         private _masterpassScriptLoader: MasterpassScriptLoader,
         private _locale: string,
     ) {}
 
-    initialize(options: PaymentInitializeOptions): Promise<InternalCheckoutSelectors> {
+    initialize(
+        options: PaymentInitializeOptions & WithMasterpassPaymentInitializeOptions,
+    ): Promise<void> {
         const { methodId } = options;
 
-        this._paymentMethod = this._store.getState().paymentMethods.getPaymentMethod(methodId);
+        this._paymentMethod = this._paymentIntegrationService.getState().getPaymentMethod(methodId);
 
         if (!this._paymentMethod) {
             throw new MissingDataError(MissingDataErrorType.MissingPaymentMethod);
@@ -65,12 +65,10 @@ export default class MasterpassPaymentStrategy implements PaymentStrategy {
                     this._walletButton = walletButton;
                     this._walletButton.addEventListener('click', this._handleWalletButtonClick);
                 }
-
-                return this._store.getState();
             });
     }
 
-    deinitialize(): Promise<InternalCheckoutSelectors> {
+    deinitialize(): Promise<void> {
         this._paymentMethod = undefined;
 
         if (this._walletButton) {
@@ -80,13 +78,10 @@ export default class MasterpassPaymentStrategy implements PaymentStrategy {
         this._walletButton = undefined;
         this._masterpassClient = undefined;
 
-        return Promise.resolve(this._store.getState());
+        return Promise.resolve();
     }
 
-    execute(
-        payload: OrderRequestBody,
-        options?: PaymentRequestOptions,
-    ): Promise<InternalCheckoutSelectors> {
+    async execute(payload: OrderRequestBody, options?: PaymentRequestOptions): Promise<void> {
         const { payment } = payload;
         const order = { useStoreCredit: payload.useStoreCredit };
 
@@ -99,7 +94,7 @@ export default class MasterpassPaymentStrategy implements PaymentStrategy {
         if (
             !this._paymentMethod ||
             !this._paymentMethod.initializationData ||
-            !this._paymentMethod.initializationData.gateway
+            !this._paymentMethod.initializationData?.gateway
         ) {
             throw new MissingDataError(MissingDataErrorType.MissingPaymentMethod);
         }
@@ -114,23 +109,18 @@ export default class MasterpassPaymentStrategy implements PaymentStrategy {
             );
         }
 
-        return this._store
-            .dispatch(this._orderActionCreator.submitOrder(order, options))
-            .then(() =>
-                this._store.dispatch(
-                    this._paymentActionCreator.submitPayment({ ...payment, paymentData }),
-                ),
-            );
+        await this._paymentIntegrationService.submitOrder(order, options);
+        await this._paymentIntegrationService.submitPayment({ ...payment, paymentData });
     }
 
-    finalize(): Promise<InternalCheckoutSelectors> {
+    finalize(): Promise<void> {
         return Promise.reject(new OrderFinalizationNotRequiredError());
     }
 
     private _createMasterpassPayload(): MasterpassCheckoutOptions {
-        const state = this._store.getState();
-        const checkout = state.checkout.getCheckout();
-        const storeConfig = state.config.getStoreConfig();
+        const state = this._paymentIntegrationService.getState();
+        const checkout = state.getCheckout();
+        const storeConfig = state.getStoreConfig();
 
         if (!checkout) {
             throw new MissingDataError(MissingDataErrorType.MissingCheckout);
@@ -154,7 +144,7 @@ export default class MasterpassPaymentStrategy implements PaymentStrategy {
         };
     }
 
-    @bind
+    // @bind
     private _handleWalletButtonClick(event: Event) {
         event.preventDefault();
 
